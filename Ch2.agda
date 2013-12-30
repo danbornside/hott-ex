@@ -11,7 +11,11 @@ module Ch2 where
   -}
   ind== : ∀ {i j} {A : Type i} (D : (x y : A) → x == y → Type j) (d : (x : A) → D x x idp)
     {x y : A} (p : x == y) → D x y p
-  ind== D d {x} idp = d x
+  ind== D d {x} idp = d x -- slight concern: what are the rules for implicit {x} and {y}
+                          -- converging on the single {x} parameter here?  I don't know Agda
+                          -- well enough to answer this yet.  Depending upon what
+                          -- they are, this rule may be a duplicate of one of the based
+                          -- path induction rules below.
 
   {- Based path induction, or the J rule in HoTT-Agda lib -}
   ind=' : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : a == x) → Type j) (d : D a idp)
@@ -23,11 +27,13 @@ module Ch2 where
     {x : A} (p : x == a) → D x p
   ind'= D d idp = d
 
-  -- ind==-=-ind=' : ∀ {j} {x y : A} {D : (x y : A) → x == y → Type j} {d : (x : A) → D x x idp}
 
 {-
-Lemma 2.1.2. For every type A and every x, y, z : A there is a function (x = y) → (y = z) → (x = z)
-written p → q → p ∙ q, such that reflx ∙ reflx ≡ reflx for any x : A. We call p ∙ q the concatenation or composite of p and q.
+Lemma 2.1.2. For every type A and every x, y, z : A there is a function
+ (x = y) → (y = z) → (x = z)
+written p → q → p ∙ q, such that reflx ∙ reflx ≡ reflx for any x : A. 
+
+We call p ∙ q the concatenation or composite of p and q.
 
 Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
 -}
@@ -47,7 +53,7 @@ Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
   behaving like the Paulin-Mohring identity type."
 
   concat1' and concat3' are proved using ind== which is the closest I could get
-  to free path induction (as in the book), but unfortunately this doesn't work out
+  to free path induction (as in the book), but unfortunately this didn't work out
   for concat2' which had to use left-based path induction, ie ind=' (J in the
   HoTT-Agda libs)
   -}
@@ -56,19 +62,19 @@ Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
   concat1 idp q = q
 
   concat1' : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
-  concat1' {i} {A} {x} {y} {z} = ind== D d where
+  concat1' {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → (p : x == y) → Type i
     D x y _ = y == z → x == z
 
     d : (x₁ : A) → D x₁ x₁ idp
-    d x = λ p → p
+    d _ = λ q → q
 
   concat2 : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
   concat2 p idp = p
   
-  -- uses based path induction
+  -- uses based path induction, because I couldn't get free path induction to work
   concat2' : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
-  concat2' {i} {A} {x} {y} p = ind=' D d where
+  concat2' {i} {A} {x} {y} {_} p = ind=' D d where
     D : (z : A) → y == z → Type i
     D z _ = x == z
 
@@ -79,35 +85,38 @@ Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
   concat3 idp idp = idp
 
   concat3' : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
-  concat3' {i} {A} {x} {y} {z} = ind== D d where
+  concat3' {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → (p : x == y) → Type i
-    D x y p = y == z → x == z
+    D x y _ = y == z → x == z
 
     d : (x₁ : A) → D x₁ x₁ idp
-    d x = ind== E e where
-      E : (x z : A) (q : x == z) → Type i
-      E x z q = x == z
+    d _ = ind== E e where
+      E : (y z : A) (q : y == z) → Type i
+      E y z _ = y == z
 
       e : (x : A) → E x x idp
       e _ = idp
 
-  concat1=concat2 : ∀ {i} {A : Type i} {x y z : A} →
+  concat1=concat2 : ∀ {i} {A : Type i} {x y z : A} 
     (p : x == y) (q : y == z) → concat1 p q == concat2 p q
   concat1=concat2 idp idp = idp
 
   concat1'=concat2' : ∀ {i} {A : Type i} {x y z : A} 
     (p : x == y) (q : y == z) → concat1' p q == concat2' p q
-  concat1'=concat2' {i} {A} {x} {y} {z} = ind== D d where
+  concat1'=concat2' {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
-    D x y p = (q : y == z) → concat1' p q == concat2' p q
+    D _ y p = (q : y == z) → concat1' p q == concat2' p q
 
     d : (x : A) → D x x idp
-    d x = ind== E e where
+    d _ = ind== E e where
       E : (y₁ z₁ : A) → y₁ == z₁ → Type i
-      E y z q = concat1' idp q == concat2' idp q
+      E _ _ q = concat1' idp q == concat2' idp q
 
       e : (x₁ : A) → E x₁ x₁ idp
-      e x = idp -- : concat1' idp idp == concat2' idp idp
+      e _ = idp -- : concat1' idp idp == concat2' idp idp
+                -- > (ind== D d) idp idp == (ind== D d) idp idp
+                -- > (d1 x) idp = (d2 x) idp
+                -- > idp == idp -- (this being the type of the inhabitant value idp of e x)
 
   concat2=concat3 : ∀ {i} {A : Type i} {x y z : A} 
     (p : x == y) (q : y == z) → concat2 p q == concat3 p q
@@ -117,31 +126,31 @@ Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
     (p : x == y) (q : y == z) → concat2' p q == concat3' p q
   concat2'=concat3' {i} {A} {x} {y} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
-    D x y p = (q : y == z) → concat2' p q == concat3' p q
+    D _ y p = (q : y == z) → concat2' p q == concat3' p q
 
     d : (x : A) → D x x idp
     d x = ind== E e where
       E : (y₁ z₁ : A) → y₁ == z₁ → Type i
-      E y z q = concat2' idp q == concat3' idp q
+      E _ _ q = concat2' idp q == concat3' idp q
 
       e : (x₁ : A) → E x₁ x₁ idp
-      e x = idp -- : concat2' idp idp == concat3' idp idp
+      e _ = idp -- : concat2' idp idp == concat3' idp idp
 
   concat1=concat3 : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) → concat1 p q == concat3 p q
   concat1=concat3 idp idp = idp
 
   concat1'=concat3' : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) → concat1' p q == concat3' p q
-  concat1'=concat3' {i} {A} {x} {y} {z} = ind== D d where
+  concat1'=concat3' {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
     D x y p = (q : y == z) → concat1' p q == concat3' p q
 
     d : (x : A) → D x x idp
-    d x = ind== E e where
+    d _ = ind== E e where
       E : (y z : A) → (q : y == z) → Type i
-      E y z q = concat1' idp q == concat3' idp q
+      E _ _ q = concat1' idp q == concat3' idp q
 
       e : (y : A) → E y y idp
-      e y = idp -- : concat1' idp idp == concat3' idp idp
+      e _ = idp -- : concat1' idp idp == concat3' idp idp
 
   module Ex2-2 where
 
@@ -154,24 +163,26 @@ Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
   (p 􏰂1 q) = (p 􏰂3 q).
   -}
 
+  -- A choice of which 'concat' we use for the statement of the proof term; we use the book one
   concat = concat3
 
   concat-commutative-triangle : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) →
     concat (concat1=concat2 p q) (concat2=concat3 p q) == concat1=concat3 p q
   concat-commutative-triangle idp idp = idp
 
+  -- likewise, the ind== version of the book concat operator
   concat' = concat3'
 
   concat-commutative-triangle' : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) →
     concat' (concat1'=concat2' p q) (concat2'=concat3' p q) == concat1'=concat3' p q
-  concat-commutative-triangle' {i} {A} {x} {y} {z} = ind== D d where
+  concat-commutative-triangle' {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
-    D x y p = (q : y == z) → concat' (concat1'=concat2' p q) (concat2'=concat3' p q) == concat1'=concat3' p q
+    D _ y p = (q : y == z) → concat' (concat1'=concat2' p q) (concat2'=concat3' p q) == concat1'=concat3' p q
 
     d : (x : A) → D x x idp
-    d x = ind== E e where
+    d _ = ind== E e where
       E : (y z : A) → (q : y == z) → Type i
-      E y z q = concat' (concat1'=concat2' idp q) (concat2'=concat3' idp q) == concat1'=concat3' idp q
+      E _ _ q = concat' (concat1'=concat2' idp q) (concat2'=concat3' idp q) == concat1'=concat3' idp q
 
       e : (y : A) → E y y idp
-      e y = idp --: concat' (concat1'=concat2' idp idp) (concat2'=concat3' idp idp) == concat1'=concat3' idp idp
+      e _ = idp -- : concat' (concat1'=concat2' idp idp) (concat2'=concat3' idp idp) == concat1'=concat3' idp idp
