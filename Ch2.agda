@@ -2,7 +2,8 @@
 
 module Ch2 where
 
-  open import lib.Base
+  -- open import lib.Base
+  open import Base
 
   {- Free path induction, or as close as I could get, written in Section 1.12.1 as
   
@@ -79,6 +80,18 @@ module Ch2 where
   
       d : D _ idp
       d = p
+
+
+    -- here is the free path induction version which doesn't work.. amazingly it typechecks as-is (with a warning)
+    concat2'' : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
+    concat2'' {i} {A} {x} {y} {_} p = ind== D d where
+      D : (y z : A) → (q : y == z) → Type i
+      D _ z _ = x == z
+
+      d : (y : A) → D y y idp
+      d _ = _  -- <<<<< I want to use p here, but can't since the free endpoint y. in d is to be 
+               -- restricted to the y that p : x == y connects to (and I don't know how to talk
+               -- Agda into this)
   
     concat3 : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
     concat3 idp idp = idp
@@ -112,9 +125,10 @@ module Ch2 where
         E _ _ q = concat1' idp q == concat2' idp q
   
         e : (x₁ : A) → E x₁ x₁ idp
-        e _ = idp -- : concat1' idp idp == concat2' idp idp
-                  -- > (ind== D d) idp idp == (ind== D d) idp idp
-                  -- > (d1 x) idp = (d2 x) idp
+        e _ = idp -- : concat1' idp idp == concat2' idp idp   ⇓'p'
+                  -- > (ind== D1 d1) idp idp == (ind== D2 d2) idp idp 
+                  -- > (d1 q) idp == (d2 x) idp
+                  -- > (λ q → q) idp == 'p' (aka idp)
                   -- > idp == idp -- (this being the type of the inhabitant value idp of e x)
   
     concat2=concat3 : ∀ {i} {A : Type i} {x y z : A} 
@@ -189,3 +203,14 @@ module Ch2 where
   
         e : (y : A) → E y y idp
         e _ = idp -- : concat' (concat1'=concat2' idp idp) (concat2'=concat3' idp idp) == concat1'=concat3' idp idp
+
+  module Ex2-3 where
+
+    -- use another of the based path inductions
+
+  module Ex2-4 where
+
+  {- Define, by induction on n, a general notion of n-dimensional path in a type A,
+  simultaneously with the type of boundaries for such paths. -}
+
+  
