@@ -4,67 +4,26 @@ module Ch2 where
 
 -- open import lib.Base
 open import Base
-            
-{- Free path induction, or as close as I could get, written in Section 1.12.1 as
-
-ind=A : ∏ ∏(x:A)C(x,x,reflx) → ∏ ∏ C(x,y,p) (C:∏(x,y:A)(x=Ay)→U) (x,y:A) (p:x=Ay)
-ind=A (C, c, x, x, reflx) :≡ c(x)
--}
-ind== : ∀ {i j} {A : Type i} (D : (x y : A) → x == y → Type j) (d : (x : A) → D x x idp)
-  {x y : A} (p : x == y) → D x y p
-ind== D d {x} idp = d x -- slight concern: what rules govern the implicit {x} and {y}
-                        -- converging on the single {x} parameter here?  I don't know Agda
-                        -- well enough to answer this yet.  Depending upon what
-                        -- they are, this rule may be a duplicate of one of the based
-                        -- path induction rules below.
-                                                
-{- Based path induction, or the J rule in HoTT-Agda lib -}
-ind=' : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : a == x) → Type j) (d : D a idp)
-  {x : A} (p : a == x) → D x p
-ind=' D d idp = d
-
-{- Right-based path induction, or J' in the HoTT-Agda lib -}
-ind'= : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : x == a) → Type j) (d : D a idp)
-  {x : A} (p : x == a) → D x p
-ind'= D d idp = d
-                
-ind==2 : ∀ {i j} {A : Type i} (D : {x y : A} → x == y → Type j) (d : {x : A} → D {x} {x} idp)
-  {x y : A} (p : x == y) → D p
-ind==2 D d idp = d -- slight concern: what rules govern the implicit {x} and {y}
-
-{- Alternative based path induction as a specialized free path induction -}
-ind='2 : ∀ {i j} {A : Type i} {a : A} (D : {x : A} (p : a == x) → Type j) (d : D idp)
-  {x : A} (p : a == x) → D p
-ind='2 D d = ind==2 ? ?
-
--- Christine Paulin-Mohring’s version of the J rule is based path induction ind='
-JCPM : ∀ {i j} {A : Type i} {a : A} (D : {x : A} → a == x → Type j) → D idp →
-  {x : A} (p : a == x) → D p
-JCPM D d idp = d
-
-                
-{-
-Lemma 2.1.2. For every type A and every x, y, z : A there is a function
-(x = y) → (y = z) → (x = z)
-written p → q → p ∙ q, such that reflx ∙ reflx ≡ reflx for any x : A. 
-                                                                   
-We call p ∙ q the concatenation or composite of p and q.
-                                                      
-Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
--}
-  
--- (proof(s) of 2.1.2 are the inhabitants of the type corresponding to the statement 
--- of the lemma)
-          
+                      
 module Ex2-1 where
-             
+  {-
+  Lemma 2.1.2. For every type A and every x, y, z : A there is a function
+  (x = y) → (y = z) → (x = z)
+  written p → q → p ∙ q, such that reflx ∙ reflx ≡ reflx for any x : A. 
+                                                                   
+  We call p ∙ q the concatenation or composite of p and q.
+  -}
+   
+  {-                                                      
+  Exercise 2.1 Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
+  -}
+
+  -- (proof(s) of 2.1.2 are the inhabitants of the type corresponding to the
+  -- statement of the lemma)
+
   {- The versions of concat below WITHOUT the primes 's are proved using Agda's
   'internal J rule', whatever that might be.  In the HoTT-Agda lib, there is a
   comment that:
-
-  "At the time I’m writing this (July 2013), the identity type is somehow broken in
-  Agda dev, it behaves more or less as the Martin-Löf identity type instead of
-  behaving like the Paulin-Mohring identity type."
 
   concat1' and concat3' are proved using ind== which is the closest I could get
   to free path induction (as in the book), but unfortunately this didn't work out
