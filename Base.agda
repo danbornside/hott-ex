@@ -42,20 +42,43 @@ Path = _==_
 {-# BUILTIN EQUALITY _==_ #-}
 {-# BUILTIN REFL  idp #-}
 
-{- Paulin-Mohring J rule
+{- Free path induction, or as close as I could get, written in Section 1.12.1 as
 
-At the time I’m writing this (July 2013), the identity type is somehow broken in
-Agda dev, it behaves more or less as the Martin-Löf identity type instead of
-behaving like the Paulin-Mohring identity type.
-So here is the Paulin-Mohring J rule -}
+ind=A : ∏ ∏(x:A)C(x,x,reflx) → ∏ ∏ C(x,y,p) (C:∏(x,y:A)(x=Ay)→U) (x,y:A) (p:x=Ay)
+ind=A (C, c, x, x, reflx) :≡ c(x)
+-}
+ind== : ∀ {i j} {A : Type i} (D : (x y : A) → x == y → Type j) (d : (x : A) → D x x idp)
+  {x y : A} (p : x == y) → D x y p
+ind== D d {x} idp = d x -- slight concern: what rules govern the implicit {x} and {y}
+                        -- converging on the single {x} parameter here?  I don't know Agda
+                        -- well enough to answer this yet.  Depending upon what
+                        -- they are, this rule may be a duplicate of one of the based
+                        -- path induction rules below.
+                                                
+{- Based path induction, or the J rule in HoTT-Agda lib -}
+ind=' : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : a == x) → Type j) (d : D a idp)
+  {x : A} (p : a == x) → D x p
+ind=' D d idp = d
 
-J : ∀ {i j} {A : Type i} {a : A} (B : (a' : A) (p : a == a') → Type j) (d : B a idp)
-  {a' : A} (p : a == a') → B a' p
-J B d idp = d
+{- Right-based path induction, or J' in the HoTT-Agda lib -}
+ind'= : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : x == a) → Type j) (d : D a idp)
+  {x : A} (p : x == a) → D x p
+ind'= D d idp = d
+                
+ind==2 : ∀ {i j} {A : Type i} (D : {x y : A} → x == y → Type j) (d : {x : A} → D {x} {x} idp)
+  {x y : A} (p : x == y) → D p
+ind==2 D d idp = d -- slight concern: what rules govern the implicit {x} and {y}
 
-J' : ∀ {i j} {A : Type i} {a : A} (B : (a' : A) (p : a' == a) → Type j) (d : B a idp)
-  {a' : A} (p : a' == a) → B a' p
-J' B d idp = d
+-- {- Alternative based path induction as a specialized free path induction -}
+-- ind='2 : ∀ {i j} {A : Type i} {a : A} (D : {x : A} (p : a == x) → Type j) (d : D idp)
+--   {x : A} (p : a == x) → D p
+-- ind='2 D d = ind==2 {!!} {!!}
+
+-- Christine Paulin-Mohring’s version of the J rule is based path induction ind='
+J : ∀ {i j} {A : Type i} {a : A} (D : {x : A} → a == x → Type j) → D idp →
+  {x : A} (p : a == x) → D p
+J D d idp = d
+
 
 {- Unit type
 
@@ -133,6 +156,46 @@ transport! : ∀ {i j} {A : Type i} (B : A → Type j) {x y : A} (p : x == y)
   → (B y → B x)
 transport! B p = coe! (ap B p)
 
+{- Equational reasoning
+
+Equational reasoning is a way to write readable chains of equalities.
+The idea is that you can write the following:
+
+  t : a == e
+  t = a =⟨ p ⟩
+      b =⟨ q ⟩
+      c =⟨ r ⟩
+      d =⟨ s ⟩
+      e ∎
+
+where [p] is a path from [a] to [b], [q] is a path from [b] to [c], and so on.
+
+You often have to apply some equality in some context, for instance [p] could be
+[ap ctx thm] where [thm] is the interesting theorem used to prove that [a] is
+equal to [b], and [ctx] is the context.
+In such cases, you can use instead [thm |in-ctx ctx]. The advantage is that
+[ctx] is usually boring whereas the first word of [thm] is the most interesting
+part.
+
+_=⟨_⟩ is not definitionally the same thing as concatenation of paths _∙_ because
+we haven’t defined concatenation of paths yet, and also you probably shouldn’t
+reason on paths constructed with equational reasoning.
+If you do want to reason on paths constructed with equational reasoning, check
+out lib.types.PathSeq instead.
+-}
+
+infix  2 _∎
+infixr 2 _=⟨_⟩_
+
+_=⟨_⟩_ : ∀ {i} {A : Type i} (x : A) {y z : A} → x == y → y == z → x == z
+_ =⟨ idp ⟩ idp = idp
+
+_∎ : ∀ {i} {A : Type i} (x : A) → x == x
+_ ∎ = idp
+
+syntax ap f p = p |in-ctx f
+
+
 {- Coproducts and case analysis -}
 
 data Coprod {i j} (A : Type i) (B : Type j) : Type (lmax i j) where
@@ -187,7 +250,7 @@ _≠_ : ∀ {i} {A : Type i} → (A → A → Type i)
 x ≠ y = ¬ (x == y)
 
 -- Cartesian product
-_×_ : ∀ {i j} (A : Type i) (B : Type j) → Type (lmax i j)
+_×_ : ∀ {i j} (A : Type i) (B : Type j) → Type _
 A × B = Σ A (λ _ → B)
 
 ⊥ = Empty
@@ -197,5 +260,24 @@ A × B = Σ A (λ _ → B)
 Shorter notation for Π-types.
 -}
 
-Π : ∀ {i j} (A : Type i) (P : A → Type j) → Type (lmax i j)
+Π : ∀ {i j} (A : Type i) (P : A → Type j) → Type _
 Π A P = (x : A) → P x
+
+{- Bool type -}
+
+data Bool : Type₀ where
+  true : Bool
+  false : Bool
+
+
+{- Equivalences -}
+
+module _ {i} {j} {A : Type i} {B : Type j} where
+
+  record is-equiv (f : A → B) : Type (lmax i j)
+    where
+    field
+      g : B → A
+      f-g : (b : B) → f (g b) == b
+      g-f : (a : A) → g (f a) == a
+      adj : (a : A) → ap f (g-f a) == f-g (f a)

@@ -53,7 +53,7 @@ module Ex1-2 where
     recAxB f (a , b) == f a b
   recAxB= = idp
   
-  recA+B : ∀ {i j k} {A : Type i} {B : Type j} {C : Type k} →
+  recA+B : ∀ {i j} {A : Type i} {B : Type j} {C : Type (lmax i j)} →
     (A → C) → (B → C) → (Coprod A B → C)
   recA+B f g (inl x) = f x
   recA+B f g (inr x) = g x
@@ -64,18 +64,18 @@ module Ex1-2 where
     (recA+B f g (inl a) == f a) × (recA+B f g (inr b) == g b)
   recA+B= = idp , idp
   
-  recΣ : ∀ {i j k} {A : Type i} {B : A → Type j} {C : Type k} →
+  recΣ : ∀ {i j} {A : Type i} {B : A → Type j} {C : Type (lmax i j)} →
     ((a : A) → B a → C) →
     Σ A B → C
   recΣ f ab = f (fst ab) (snd ab)
   
-  recΣ= : ∀ {i j k} {A : Type i} {B : A → Type j} {C : Type k}
+  recΣ= : ∀ {i j} {A : Type i} {B : A → Type j} {C : Type (lmax i j)}
     {f : (a : A) → B a → C}
     {a : A} {ba : B a} →
     recΣ f (a , ba) == f a ba
   recΣ= = idp
           
-module Ex1-3 where
+module Ex1-3 {i j} {A : Type i} {B : Type j} where
   
   -- open import lib.types.Sigma
                  
@@ -85,41 +85,42 @@ module Ex1-3 where
   -}
   
   -- book definition of uppt
-  upptAxB : ∀ {i j} {A : Type i} {B : Type j} →
-    (x : (A × B)) → (fst x , snd x) == x
-  upptAxB = λ _ → idp
+  uppt-× : (x : (A × B)) → (fst x , snd x) == x
+  uppt-× = λ _ → idp
   
-  -- definition of induction principle using only the projections
-  indAxB : ∀ {i j k} {A : Type i} {B : Type j} → 
-    (C :  (A × B) → Type k) →
-    Π A (λ x → Π B (λ y → C (x , y))) → Π (A × B) C
-  indAxB _ g ab = g (fst ab) (snd ab)
+  -- definition of induction principle the projections and the transported uniqueness principle
+  -- (this was a confusing question to work out in Agda, since the transport is redundant)
+  ind-× : (C :  (A × B) → Type (lmax i j)) →
+    ((a : A ) → (b : B) → C (a , b)) → Π (A × B) C
+  ind-× C g ab = transport C (uppt-× ab) (g (fst ab) (snd ab))
+
+  -- (propositional) verification of defining equations
+  ind-×= : (C :  (A × B) → Type (lmax i j)) →
+    (g : ((a : A ) → (b : B) → C (a , b))) → 
+    ∀ {a b} → ind-× C g (a , b) == g a b
+  ind-×= _ _ = idp 
   
   -- book definition of induction principle using pattern matching
-  indAxB2 : ∀ {i j k} {A : Type i} {B : Type j} → 
-    (C :  (A × B) → Type k) →
+  pattern-match-ind-× : (C :  (A × B) → Type (lmax i j)) →
     Π A (λ x → Π B (λ y → C (x , y))) → Π (A × B) C
-  indAxB2 _ g (a , b) = g a b
+  pattern-match-ind-× _ g (a , b) = g a b
   
-  -- another definition of uniqueness principle upptAxBind (using induction principle)
-  upptAxBind : ∀ {i j} {A : Type i} {B : Type j} →
-    (x : (A × B)) → (fst x , snd x) == x
-  upptAxBind = indAxB (λ z → z == z) (λ x x₁ → idp)
+  -- alternative definition of uniqueness principle (from induction principle)
+  ind-uppt-× : (x : (A × B)) → (fst x , snd x) == x
+  ind-uppt-× = ind-× (λ z → z == z) (λ x x₁ → idp)
   
   -- validate definition for uppt
-  upptAxB= : ∀ {i j} {A : Type i} {B : Type j} {x : (A × B)} →
-    (upptAxB x) == (upptAxBind x)
-  upptAxB= = idp
+  uppt-×= : {x : (A × B)} → (uppt-× x) == (ind-uppt-× x)
+  uppt-×= = idp
   
   -- uppt for Σ types
-  upptΣ : ∀ {i j} {A : Type i} {B : A → Type j} →
-    (ab : Σ A B) → (fst ab , snd ab) == ab
+  upptΣ : {B : (a : A) → Type j} → (ab : Σ A B) → ab == (fst ab , snd ab)
   upptΣ _ = idp
 
 module Ex1-4 where
 
   -- open import lib.types.Sigma
-                 
+  
   {-
   Assuming as given only the iterator for natural numbers 
   iter : ∏ C → (C → C) → N → C
@@ -226,3 +227,69 @@ module Ex1-4 where
   
       cs= : ∀ {n m} {c : C} → n == m → cs n c == cs m c
       cs= idp = idp
+
+-- recursor for Bool (used in next two exercises)
+module RecBool where
+  recBool : ∀ {i} {A : Type i} → A → A → Bool → A
+  recBool x y true = x
+  recBool x y false = y
+
+module Ex1-5 where
+  open RecBool
+  {-
+  Exercise 1.5. Show that if we define A + B :≡ ∑(x:2) rec2(U, A, B, x), then we can give a definition
+  of indA+B for which the definitional equalities stated in §1.7 hold.
+  -}
+  _+_ : ∀ {i} → Type i → Type i → Type _
+  A + B = Σ Bool (λ isA → recBool A B isA)
+  
+  inl-+ : ∀ {i} {A B : Type i} → A → A + B
+  inl-+ a = true , a
+
+  inr-+ : ∀ {i} {A B : Type i} → B → A + B
+  inr-+ b = false , b
+
+  ind-+ : ∀ {i j} {A B : Type i} (C : A + B → Type j) →
+    ((a : A) → C (inl-+ a)) → ((b : B) → C (inr-+ b)) →
+    (x : A + B) → C x
+  ind-+ C g1 g2 (true , a) = g1 a
+  ind-+ C g1 g2 (false , b) = g2 b
+
+module Ex1-6 {i} {A B : Type i} where
+  open RecBool
+  open import FunExt
+  {-
+  Exercise 1.6. Show that if we define A × B :≡ ∏(x:2) rec2(U, A, B, x), then we can give a defini- tion of indA×B for which the definitional equalities stated in §1.5 hold propositionally (i.e. using equality types). (This requires the function extensionality axiom, which is introduced in §2.9.)
+  -}
+  
+  _x_ : ∀ {i} → (A : Type i) → (B : Type i) → Type _
+  A x B = Π Bool (λ ab → recBool A B ab)
+  
+  _,,_ : A → B → A x B
+  _,,_ a b true = a
+  _,,_ a b false = b
+
+  fst-x : A x B → A
+  fst-x ab = ab true
+
+  snd-x : A x B → B
+  snd-x ab = ab false
+
+  uppt-x : (ab : (A x B)) → (fst-x ab ,, snd-x ab) == ab
+  uppt-x ab = is-equiv.g fe h where -- (fst-x ab ,, snd-x ab) x == ab x
+    fe = fun-ext ((fst-x ab ,, snd-x ab)) ab
+    h : (c : Bool) → (fst-x ab ,, snd-x ab) c == ab c
+    h true = idp
+    h false = idp
+
+  ind-x : ∀ {j} (C : A x B → Type j) →
+    ((a : A) → (b : B) → C (a ,, b)) →
+    (ab : A x B) → C ab
+  ind-x C g ab = transport C (uppt-x ab) (g a b) where
+    a = fst-x ab
+    b = snd-x ab
+
+module Ex1-7 {i} {A B : Type i} where
+  {-
+  Exercise 1.7. Give an alternative derivation of ind′=A from ind=A which avoids the use of universes. (This is easiest using concepts from later chapters.)
+  -}
