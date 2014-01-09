@@ -7,8 +7,7 @@ module Hmm where
   -- open import lib.types.Nat
 
   -- using these libraries does not, yet the code is copied/pasted from HoTT-Agda
-  open import Path
-  open import Nat
+  open import Base
 
   S= : {m n : ℕ} → m == n → S m == S n
   S= idp = idp
