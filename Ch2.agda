@@ -42,20 +42,6 @@ module Ex2-1 where
     d : (x₁ : A) → D x₁ x₁ idp
     d _ = λ q → q
 
-  concatTwo : ∀ {i} {A : Type i} {x y z : A} → y == z → x == y → x == z
-  concatTwo {i} {A} {x} {_} {_} = ind== D d where
-    D : (y z : A) → (q : y == z) → Type i
-    D y z _ = x == y → x == z
-
-    d : (y : A) → D y y idp
-    d _ = λ q → q
-
-  twist : ∀ {i} {A : Type i} {x y z : A} -> (y == z -> x == y -> x == z) -> (x == y -> y == z -> x == z)
-  twist {i} {A} {x} {y} {z} conc = λ p -> λ q -> conc q p
-
-  concat2'''' : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
-  concat2'''' = twist concatTwo
-
   concat2 : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
   concat2 p idp = p
   
@@ -88,6 +74,20 @@ module Ex2-1 where
                    
     d : {y' : A} → D {y'} {y'} idp
     d {yy} = {!!}  -- <<<<< I want to use p here, but can't since the free endpoint y in d needs to be 
+
+  concatTwo : ∀ {i} {A : Type i} {x y z : A} → y == z → x == y → x == z
+  concatTwo {i} {A} {x} {_} {_} = ind== D d where
+    D : (y z : A) → (q : y == z) → Type i
+    D y z _ = x == y → x == z
+
+    d : (y : A) → D y y idp
+    d _ = λ q → q
+
+  twist : ∀ {i} {A : Type i} {x y z : A} -> (y == z -> x == y -> x == z) -> (x == y -> y == z -> x == z)
+  twist {i} {A} {x} {y} {z} conc = λ p -> λ q -> conc q p
+
+  concat2'''' : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
+  concat2'''' = twist concatTwo
 
   concat3 : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
   concat3 idp idp = idp
