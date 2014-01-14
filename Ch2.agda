@@ -127,6 +127,24 @@ module Ex2-1 where
                 -- > (λ q → q) idp == 'p' (aka idp)
                 -- > idp == idp -- (this being the type of the inhabitant value idp of e x)
 
+  concat1'=concat2'''' : ∀ {i} {A : Type i} {x y z : A} 
+    (p : x == y) (q : y == z) → concat1' p q == concat2'''' p q
+  concat1'=concat2'''' {i} {A} {_} {_} {z} = ind== D d where
+    D : (x y : A) → x == y → Type i
+    D _ y p = (q : y == z) → concat1' p q == concat2'''' p q
+
+    d : (x : A) → D x x idp
+    d _ = ind== E e where
+      E : (y₁ z₁ : A) → y₁ == z₁ → Type i
+      E _ _ q = concat1' idp q == concat2'''' idp q
+
+      e : (x₁ : A) → E x₁ x₁ idp
+      e _ = idp -- : concat1' idp idp == concat2' idp idp   ⇓'p'
+                -- > (ind== D1 d1) idp idp == (ind== D2 d2) idp idp 
+                -- > (d1 q) idp == (d2 x) idp
+                -- > (λ q → q) idp == 'p' (aka idp)
+                -- > idp == idp -- (this being the type of the inhabitant value idp of e x)
+
   concat2=concat3 : ∀ {i} {A : Type i} {x y z : A} 
     (p : x == y) (q : y == z) → concat2 p q == concat3 p q
   concat2=concat3 idp idp = idp
