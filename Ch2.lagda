@@ -85,7 +85,7 @@ First, we need a type to inhabit. The type of any concatenation operator is
 
 Thus far, the only tool we have to inhabit such a type is path induction. So, we first write down a family
 
-\[ D_1 : \prod_{x,y: A} \prod_{p: x = y} (y = z) → (x = z) \]
+\[ D_1(x,y,p) : \prod_{z:A} (y = z) → (x = z) \]
 
 That is, given $x,y: A$ and a path from $x$ to $y$, we want a function that takes paths from $y$ to $z$ to paths from $x$ to $z$.
 
@@ -95,7 +95,7 @@ Path induction dictates that we now need a
 
 hence
 
-\[ d_1(x) : (x = z) → (x = z) \]
+\[ d_1(x) : \prod_{z:A} (x = z) → (x = z) \]
 
 So, given a path from $x$ to $z$, we want a path from $x$ to $z$. We'll take the easy way out on this one!
 
