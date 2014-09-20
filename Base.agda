@@ -2,25 +2,16 @@
 
 module Base where
 
-postulate  -- Universe levels
-  ULevel : Set
-  lzero : ULevel
-  lsucc : ULevel → ULevel
-  lmax : ULevel → ULevel → ULevel
-                           
-{-# BUILTIN LEVEL ULevel #-}
-{-# BUILTIN LEVELZERO lzero #-}
-{-# BUILTIN LEVELSUC lsucc #-}
-{-# BUILTIN LEVELMAX lmax #-}
+open import Agda.Primitive using (Level; lzero; lsuc; _⊔_)
 
-Type : (i : ULevel) → Set (lsucc i)
+Type : (i : Level) → Set (lsuc i)
 Type i = Set i
 
 Type₀ = Type lzero
 Type0 = Type lzero
 
-Type₁ = Type (lsucc lzero)
-Type1 = Type (lsucc lzero)
+Type₁ = Type (lsuc lzero)
+Type1 = Type (lsuc lzero)
 
 {- Naturals -}
 
@@ -29,8 +20,6 @@ data ℕ : Type₀ where
   S : (n : ℕ) → ℕ
 
 {-# BUILTIN NATURAL ℕ #-}
-{-# BUILTIN ZERO O #-}
-{-# BUILTIN SUC S #-}
 
 infix 3 _==_
 
@@ -54,7 +43,7 @@ ind== D d {x} idp = d x -- slight concern: what rules govern the implicit {x} an
                         -- well enough to answer this yet.  Depending upon what
                         -- they are, this rule may be a duplicate of one of the based
                         -- path induction rules below.
-                                                
+
 {- Based path induction, or the J rule in HoTT-Agda lib -}
 ind=' : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : a == x) → Type j) (d : D a idp)
   {x : A} (p : a == x) → D x p
@@ -64,7 +53,7 @@ ind=' D d idp = d
 ind'= : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : x == a) → Type j) (d : D a idp)
   {x : A} (p : x == a) → D x p
 ind'= D d idp = d
-                
+
 ind==2 : ∀ {i j} {A : Type i} (D : {x y : A} → x == y → Type j) (d : {x : A} → D {x} {x} idp)
   {x y : A} (p : x == y) → D p
 ind==2 D d idp = d -- slight concern: what rules govern the implicit {x} and {y}
@@ -198,7 +187,7 @@ syntax ap f p = p |in-ctx f
 
 {- Coproducts and case analysis -}
 
-data Coprod {i j} (A : Type i) (B : Type j) : Type (lmax i j) where
+data Coprod {i j} (A : Type i) (B : Type j) : Type (i ⊔ j) where
   inl : A → Coprod A B
   inr : B → Coprod A B
 
@@ -209,7 +198,7 @@ data Coprod {i j} (A : Type i) (B : Type j) : Type (lmax i j) where
 
 infix 1 _,_
 
-record Σ {i j} (A : Type i) (B : A → Type j) : Type (lmax i j) where
+record Σ {i j} (A : Type i) (B : A → Type j) : Type (i ⊔ j) where
   constructor _,_
   field
     fst : A
@@ -274,7 +263,7 @@ data Bool : Type₀ where
 
 module _ {i} {j} {A : Type i} {B : Type j} where
 
-  record is-equiv (f : A → B) : Type (lmax i j)
+  record is-equiv (f : A → B) : Type (i ⊔ j)
     where
     field
       g : B → A

@@ -30,7 +30,7 @@
 % Add more as you need them (shouldn’t happen often).
 
 % Using “\newenvironment” to redefine verbatim to
-% be called “code” doesn’t always work properly. 
+% be called “code” doesn’t always work properly.
 % You can more reliably use:
 
 \usepackage{fancyvrb}
@@ -66,11 +66,11 @@ open import Base
 \begin{lemma}[2.1.2]
   For every type $A$ and every $x, y, z : A$ there is a function
   $(x = y) → (y = z) → (x = z)$
-  written $p → q → p \ct q$, such that $\refl{x} \ct \refl{x} ≡ \refl{x}$ for any $x : A$. 
-                                                                   
+  written $p → q → p \ct q$, such that $\refl{x} \ct \refl{x} ≡ \refl{x}$ for any $x : A$.
+
   We call $p \ct q$ the concatenation or composite of $p$ and $q$.
 \end{lemma}
-                                                        
+
   Exercise 2.1 Show that the three obvious proofs of Lemma 2.1.2 are pairwise equal.
 
 \begin{proof}
@@ -89,7 +89,7 @@ Thus far, the only tool we have to inhabit such a type is path induction. So, we
 
 That is, given $x,y: A$ and a path from $x$ to $y$, we want a function that takes paths from $y$ to $z$ to paths from $x$ to $z$.
 
-Path induction dictates that we now need a 
+Path induction dictates that we now need a
 
 \[ d_1 : \prod_{x:A} D(x,x, \refl{x}) \]
 
@@ -130,7 +130,7 @@ This is a bit trickier in Agda, because we really want to define a curried funct
 
 However, we also want the type to be exactly the same as the types of the other constructions. Hence, we will use a twist map.
 
-\begin{code} 
+\begin{code}
   _■₂_ : ∀ {i} {A : Type i} {x y z : A} → (x == y) → (y == z) → (x == z)
   _■₂_ = twist concat2 where
     concat2 : ∀ {i} {A : Type i} {x y z : A} → (y == z) → (x == y) → (x == z)
@@ -189,7 +189,7 @@ We now want to show that these constructions are pairwise equal. By this, we mea
 
 \begin{code}
 
-  ■₁=■₂ : ∀ {i} {A : Type i} {x y z : A} 
+  ■₁=■₂ : ∀ {i} {A : Type i} {x y z : A}
     (p : x == y) (q : y == z) → p ■₁ q == p ■₂ q
   ■₁=■₂ {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
@@ -201,13 +201,9 @@ We now want to show that these constructions are pairwise equal. By this, we mea
       E _ _ q = idp ■₁ q == idp ■₂ q
 
       e : (x₁ : A) → E x₁ x₁ idp
-      e _ = idp -- : concat1' idp idp == concat2' idp idp   ⇓'p'
-                -- > (ind== D1 d1) idp idp == (ind== D2 d2) idp idp 
-                -- > (d1 q) idp == (d2 x) idp
-                -- > (λ q → q) idp == 'p' (aka idp)
-                -- > idp == idp -- (this being the type of the inhabitant value idp of e x)
+      e _ = idp
 
-  ■₂=■₃ : ∀ {i} {A : Type i} {x y z : A} 
+  ■₂=■₃ : ∀ {i} {A : Type i} {x y z : A}
     (p : x == y) (q : y == z) →  p ■₂ q == p ■₃ q
   ■₂=■₃ {i} {A} {x} {y} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
@@ -239,19 +235,19 @@ We now want to show that these constructions are pairwise equal. By this, we mea
 
 \begin{code}
 module Ex2-2 where
-             
+
   open Ex2-1
-  
+
   {-
   Show that the three equalities of proofs constructed in the previous exercise form a
   commutative triangle. In other words, if the three definitions of concatenation are denoted
   by (p 1 q), (p 2 q), and (p 3 q), then the concatenated equality
   (p 1 q) = (p 2 q) = (p 3 q)
-  is equal to the equality 
+  is equal to the equality
   (p 1 q) = (p 3 q).
   -}
 
-  
+
   -- likewise, the ind== version of the book concat operator
   _■_ = _■₃_
 
@@ -259,24 +255,24 @@ module Ex2-2 where
     (■₁=■₂ p q) ■ (■₂=■₃ p q) == ■₁=■₃ p q
   concat-commutative-triangle' {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
-    D _ y p = (q : y == z) → 
+    D _ y p = (q : y == z) →
       (■₁=■₂ p q) ■ (■₂=■₃ p q) == ■₁=■₃ p q
 
     d : (x : A) → D x x idp
     d _ = ind== E e where
       E : (y z : A) → (q : y == z) → Type i
-      E _ _ q = 
+      E _ _ q =
         (■₁=■₂ idp q) ■ (■₂=■₃ idp q) == ■₁=■₃ idp q
 
       e : (y : A) → E y y idp
       e _ = idp -- : concat' (concat1'=concat2' idp idp) (concat2'=concat3' idp idp) == concat1'=concat3' idp idp
-                                                                                                              
+
 module Ex2-3 where
-             
+
   -- use another of the based path inductions
-                                   
+
 module Ex2-4 where
-             
+
 {- Define, by induction on n, a general notion of n-dimensional path in a type A,
 simultaneously with the type of boundaries for such paths. -}
 
