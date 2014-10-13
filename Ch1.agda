@@ -36,7 +36,7 @@ Exercise 1.1. Given functions f : A -> B and g : B -> C, define their composite 
   o-assoc : ∀ {A B C D} →
     (h : C → D) → (g : B → C) → (f : A → B) →
     h o (g o f) == (h o g) o f
-  o-assoc _ _ _ = idp -- "it's de proof"
+  o-assoc _ _ _ = refl -- "it's de proof"
 
 module Ex1-2 where
 
@@ -53,7 +53,7 @@ module Ex1-2 where
     {f : A → B → C}
     {a : A} {b : B} →
     recAxB f (a , b) == f a b
-  recAxB= = idp
+  recAxB= = refl
 
   recA+B : ∀ {i j} {A : Type i} {B : Type j} {C : Type (i ⊔ j)} →
     (A → C) → (B → C) → (Coprod A B → C)
@@ -64,7 +64,7 @@ module Ex1-2 where
     {f : A → C} {g : B → C}
     {a : A} {b : B} →
     (recA+B f g (inl a) == f a) × (recA+B f g (inr b) == g b)
-  recA+B= = idp , idp
+  recA+B= = refl , refl
 
   recΣ : ∀ {i j} {A : Type i} {B : A → Type j} {C : Type (i ⊔ j)} →
     ((a : A) → B a → C) →
@@ -75,7 +75,7 @@ module Ex1-2 where
     {f : (a : A) → B a → C}
     {a : A} {ba : B a} →
     recΣ f (a , ba) == f a ba
-  recΣ= = idp
+  recΣ= = refl
 
 module Ex1-3 {i j} {A : Type i} {B : Type j} where
 
@@ -88,7 +88,7 @@ module Ex1-3 {i j} {A : Type i} {B : Type j} where
 
   -- book definition of uppt
   uppt-× : (x : (A × B)) → (fst x , snd x) == x
-  uppt-× = λ _ → idp
+  uppt-× = λ _ → refl
 
   -- definition of induction principle the projections and the transported uniqueness principle
   -- (this was a confusing question to work out in Agda, since the transport is redundant)
@@ -100,7 +100,7 @@ module Ex1-3 {i j} {A : Type i} {B : Type j} where
   ind-×= : (C :  (A × B) → Type (i ⊔ j)) →
     (g : ((a : A ) → (b : B) → C (a , b))) →
     ∀ {a b} → ind-× C g (a , b) == g a b
-  ind-×= _ _ = idp
+  ind-×= _ _ = refl
 
   -- book definition of induction principle using pattern matching
   pattern-match-ind-× : (C :  (A × B) → Type (i ⊔ j)) →
@@ -109,15 +109,15 @@ module Ex1-3 {i j} {A : Type i} {B : Type j} where
 
   -- alternative definition of uniqueness principle (from induction principle)
   ind-uppt-× : (x : (A × B)) → (fst x , snd x) == x
-  ind-uppt-× = ind-× (λ z → z == z) (λ x x₁ → idp)
+  ind-uppt-× = ind-× (λ z → z == z) (λ x x₁ → refl)
 
   -- validate definition for uppt
   uppt-×= : {x : (A × B)} → (uppt-× x) == (ind-uppt-× x)
-  uppt-×= = idp
+  uppt-×= = refl
 
   -- uppt for Σ types
   upptΣ : {B : (a : A) → Type j} → (ab : Σ A B) → ab == (fst ab , snd ab)
-  upptΣ _ = idp
+  upptΣ _ = refl
 
 module Ex1-4 where
 
@@ -163,14 +163,14 @@ module Ex1-4 where
   even n = iter 0 (λ n → S (S n)) n
 
   S= : {m n : ℕ} → m == n → (S m == S n)
-  S= idp = idp
+  S= refl = refl
 
   _*2 : ℕ → ℕ
   O *2 = O
   (S n) *2 = S (S (n *2))
 
   evens-are-even : (n : ℕ) → Σ ℕ (λ m → even n == m *2)
-  evens-are-even = indN (0 , idp) inductiveCase where
+  evens-are-even = indN (0 , refl) inductiveCase where
     inductiveCase : (n : ℕ) → Σ ℕ (λ m → even n == m *2) → Σ ℕ (λ m → even (S n) == m *2)
     inductiveCase n (m , p) = S m , p'' where
       p' = S= p
@@ -194,12 +194,12 @@ module Ex1-4 where
     (n : ℕ) →
     (recNiter c0 cs (S n)) == (cs n (recNiter c0 cs n))
   recNiter= {C} {c0} {cs} n = cs= n'= -- or, as spelled out below (using equational reasoning from HoTT-Agda)
-    -- recNiter c0 cs (S n) =⟨ idp ⟩
-    -- snd (iter' (S n)) =⟨ idp ⟩
-    -- snd (cs' (iter' n)) =⟨ idp ⟩
-    -- snd (cs' (n' , snd (iter' n))) =⟨ idp ⟩
+    -- recNiter c0 cs (S n) =⟨ refl ⟩
+    -- snd (iter' (S n)) =⟨ refl ⟩
+    -- snd (cs' (iter' n)) =⟨ refl ⟩
+    -- snd (cs' (n' , snd (iter' n))) =⟨ refl ⟩
     -- cs n' (snd (iter' n)) =⟨ cs= n'= ⟩
-    -- cs n (snd (iter' n)) =⟨ idp ⟩
+    -- cs n (snd (iter' n)) =⟨ refl ⟩
     -- cs n (recNiter c0 cs n) ∎
     where
       cs' = sucApply cs
@@ -211,16 +211,16 @@ module Ex1-4 where
 
       -- proof that the first (counter) projection of the iter version of recN at n is just n
       fstIter'= : (n : ℕ) → (fst (iter (0 , c0) cs' n) == n)
-      fstIter'= = indN idp inductiveCase where
+      fstIter'= = indN refl inductiveCase where
         inductiveCase : (n : ℕ) →
           fst (iter' n) == n →
           fst (iter' (S n)) == S n
         inductiveCase m p = S= p -- or, as spelled out below
-          -- fst (iter (0 , c0) cs' (S m)) =⟨ idp ⟩
-          -- fst (cs' (iter (0 , c0) cs' m)) =⟨ idp ⟩
-          -- fst (cs' (iter (0 , c0) cs' m)) =⟨ idp ⟩
-          -- -- fst (cs' (fst (iter (0 , c0) cs' m) , _)) =⟨ idp ⟩ -- Agda loses track of some hidden
-          -- -- fst (S (fst (iter (0 , c0) cs' m)) , _) =⟨ idp ⟩ -- type data here, thus double-protective comments
+          -- fst (iter (0 , c0) cs' (S m)) =⟨ refl ⟩
+          -- fst (cs' (iter (0 , c0) cs' m)) =⟨ refl ⟩
+          -- fst (cs' (iter (0 , c0) cs' m)) =⟨ refl ⟩
+          -- -- fst (cs' (fst (iter (0 , c0) cs' m) , _)) =⟨ refl ⟩ -- Agda loses track of some hidden
+          -- -- fst (S (fst (iter (0 , c0) cs' m)) , _) =⟨ refl ⟩ -- type data here, thus double-protective comments
           -- S (fst (iter (0 , c0) cs' m)) =⟨ S= p ⟩
           -- S m ∎
 
@@ -228,7 +228,7 @@ module Ex1-4 where
       n'= = fstIter'= n
 
       cs= : ∀ {n m} {c : C} → n == m → cs n c == cs m c
-      cs= idp = idp
+      cs= refl = refl
 
 -- recursor for Bool (used in next two exercises)
 module RecBool where
@@ -281,8 +281,8 @@ module Ex1-6 {i} {A B : Type i} where
   uppt-x ab = is-equiv.g fe h where -- (fst-x ab ,, snd-x ab) x == ab x
     fe = fun-ext ((fst-x ab ,, snd-x ab)) ab
     h : (c : Bool) → (fst-x ab ,, snd-x ab) c == ab c
-    h true = idp
-    h false = idp
+    h true = refl
+    h false = refl
 
   ind-x : ∀ {j} (C : A x B → Type j) →
     ((a : A) → (b : B) → C (a ,, b)) →

@@ -24,49 +24,53 @@ data ℕ : Type₀ where
 infix 3 _==_
 
 data _==_ {i} {A : Type i} (a : A) : A → Type i where
-  idp : a == a
+  refl : a == a
+
+-- TODO: figure this out
+--identity-paths-equal : ∀ i (A : Type i) (a : A) -> _==_ {i = i} {A = A} {a = a} refl refl
+--identity-paths-equal i A a = refl
 
 Path = _==_
 
 {-# BUILTIN EQUALITY _==_ #-}
-{-# BUILTIN REFL  idp #-}
+{-# BUILTIN REFL  refl #-}
 
 {- Free path induction, or as close as I could get, written in Section 1.12.1 as
 
 ind=A : ∏ ∏(x:A)C(x,x,reflx) → ∏ ∏ C(x,y,p) (C:∏(x,y:A)(x=Ay)→U) (x,y:A) (p:x=Ay)
 ind=A (C, c, x, x, reflx) :≡ c(x)
 -}
-ind== : ∀ {i j} {A : Type i} (D : (x y : A) → x == y → Type j) (d : (x : A) → D x x idp)
+ind== : ∀ {i j} {A : Type i} (D : (x y : A) → x == y → Type j) (d : (x : A) → D x x refl)
   {x y : A} (p : x == y) → D x y p
-ind== D d {x} idp = d x -- slight concern: what rules govern the implicit {x} and {y}
+ind== D d {x} refl = d x -- slight concern: what rules govern the implicit {x} and {y}
                         -- converging on the single {x} parameter here?  I don't know Agda
                         -- well enough to answer this yet.  Depending upon what
                         -- they are, this rule may be a duplicate of one of the based
                         -- path induction rules below.
 
 {- Based path induction, or the J rule in HoTT-Agda lib -}
-ind=' : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : a == x) → Type j) (d : D a idp)
+ind=' : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : a == x) → Type j) (d : D a refl)
   {x : A} (p : a == x) → D x p
-ind=' D d idp = d
+ind=' D d refl = d
 
 {- Right-based path induction, or J' in the HoTT-Agda lib -}
-ind'= : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : x == a) → Type j) (d : D a idp)
+ind'= : ∀ {i j} {A : Type i} {a : A} (D : (x : A) (p : x == a) → Type j) (d : D a refl)
   {x : A} (p : x == a) → D x p
-ind'= D d idp = d
+ind'= D d refl = d
 
-ind==2 : ∀ {i j} {A : Type i} (D : {x y : A} → x == y → Type j) (d : {x : A} → D {x} {x} idp)
+ind==2 : ∀ {i j} {A : Type i} (D : {x y : A} → x == y → Type j) (d : {x : A} → D {x} {x} refl)
   {x y : A} (p : x == y) → D p
-ind==2 D d idp = d -- slight concern: what rules govern the implicit {x} and {y}
+ind==2 D d refl = d -- slight concern: what rules govern the implicit {x} and {y}
 
 -- {- Alternative based path induction as a specialized free path induction -}
--- ind='2 : ∀ {i j} {A : Type i} {a : A} (D : {x : A} (p : a == x) → Type j) (d : D idp)
+-- ind='2 : ∀ {i j} {A : Type i} {a : A} (D : {x : A} (p : a == x) → Type j) (d : D refl)
 --   {x : A} (p : a == x) → D p
 -- ind='2 D d = ind==2 {!!} {!!}
 
 -- Christine Paulin-Mohring’s version of the J rule is based path induction ind='
-J : ∀ {i j} {A : Type i} {a : A} (D : {x : A} → a == x → Type j) → D idp →
+J : ∀ {i j} {A : Type i} {a : A} (D : {x : A} → a == x → Type j) → D refl →
   {x : A} (p : a == x) → D p
-J D d idp = d
+J D d refl = d
 
 
 {- Unit type
@@ -89,7 +93,7 @@ ordinary path in the fiber.
 
 PathOver : ∀ {i j} {A : Type i} (B : A → Type j)
   {x y : A} (p : x == y) (u : B x) (v : B y) → Type j
-PathOver B idp u v = (u == v)
+PathOver B refl u v = (u == v)
 
 syntax PathOver B p u v =
   u == v [ B ↓ p ]
@@ -105,13 +109,13 @@ and this is helpful in some rare cases)
 
 ap : ∀ {i j} {A : Type i} {B : Type j} (f : A → B) {x y : A}
   → (x == y → f x == f y)
-ap f idp = idp
+ap f refl = refl
 
 ap↓ : ∀ {i j k} {A : Type i} {B : A → Type j} {C : A → Type k}
   (g : {a : A} → B a → C a) {x y : A} {p : x == y}
   {u : B x} {v : B y}
   → (u == v [ B ↓ p ] → g u == g v [ C ↓ p ])
-ap↓ g {p = idp} p = ap g p
+ap↓ g {p = refl} p = ap g p
 
 {-
 [apd↓] is defined in lib.PathOver. Unlike [ap↓] and [ap], [apd] is not
@@ -120,17 +124,17 @@ definitionally a special case of [apd↓]
 
 apd : ∀ {i j} {A : Type i} {B : A → Type j} (f : (a : A) → B a) {x y : A}
   → (p : x == y) → f x == f y [ B ↓ p ]
-apd f idp = idp
+apd f refl = refl
 
 {-
 An equality between types gives two maps back and forth
 -}
 
 coe : ∀ {i} {A B : Type i} (p : A == B) → A → B
-coe idp x = x
+coe refl x = x
 
 coe! : ∀ {i} {A B : Type i} (p : A == B) → B → A
-coe! idp x = x
+coe! refl x = x
 
 {-
 The operations of transport forward and backward are defined in terms of [ap]
@@ -177,10 +181,10 @@ infix  2 _∎
 infixr 2 _=⟨_⟩_
 
 _=⟨_⟩_ : ∀ {i} {A : Type i} (x : A) {y z : A} → x == y → y == z → x == z
-_ =⟨ idp ⟩ idp = idp
+_ =⟨ refl ⟩ refl = refl
 
 _∎ : ∀ {i} {A : Type i} (x : A) → x == x
-_ ∎ = idp
+_ ∎ = refl
 
 syntax ap f p = p |in-ctx f
 
@@ -209,12 +213,12 @@ pair= : ∀ {i j} {A : Type i} {B : A → Type j}
   {a a' : A} (p : a == a') {b : B a} {b' : B a'}
   (q : b == b' [ B ↓ p ])
   → (a , b) == (a' , b')
-pair= idp q = ap (_,_ _) q
+pair= refl q = ap (_,_ _) q
 
 pair×= : ∀ {i j} {A : Type i} {B : Type j}
   {a a' : A} (p : a == a') {b b' : B} (q : b == b')
   → (a , b) == (a' , b')
-pair×= idp q = pair= idp q
+pair×= refl q = pair= refl q
 
 
 {- Empty type

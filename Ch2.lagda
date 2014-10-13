@@ -107,7 +107,7 @@ module Ex2-1 where
     D : (x y : A) → (p : x == y) → Type i
     D x y _ = y == z → x == z
 
-    d : (x : A) → D x x idp
+    d : (x : A) → D x x refl
     d _ = λ q → q
 \end{code}
 
@@ -138,7 +138,7 @@ However, we also want the type to be exactly the same as the types of the other 
       D : (y z : A) → (q : y == z) → Type i
       D y z _ = x == y → x == z
 
-      d : (y : A) → D y y idp
+      d : (y : A) → D y y refl
       d _ = λ q → q
     twist : ∀ {i} {A : Type i} {x y z : A} → ((y == z) → (x == y) →
         (x == z)) → ((x == y) → (y == z) → (x == z))
@@ -175,17 +175,22 @@ which is gotten quite easily:
     D : (x y : A) → (p : x == y) → Type i
     D x y _ = y == z → x == z
 
-    d : (x₁ : A) → D x₁ x₁ idp
+    d : (x₁ : A) → D x₁ x₁ refl
     d _ = ind== E e where
       E : (x z : A) (q : x == z) → Type i
       E x z _ = x == z
 
-      e : (x : A) → E x x idp
-      e _ = idp
+      e : (x : A) → E x x refl
+      e _ = refl
 
 \end{code}
 
-We now want to show that these constructions are pairwise equal. By this, we mean ``propositional equality'' - hence we must find paths between each pair of constructions.
+We now want to show that these constructions are pairwise equal. By this,
+we mean ``propositional equality'' - hence we must find paths between
+each pair of constructions.
+
+In each case, we perform a double induction on paths, first reducing
+$p$ to $\refl$, and then reducing $q$ to $\refl$.
 
 \begin{code}
 
@@ -195,13 +200,13 @@ We now want to show that these constructions are pairwise equal. By this, we mea
     D : (x y : A) → x == y → Type i
     D _ y p = (q : y == z) →  p ■₁ q == p ■₂ q
 
-    d : (x : A) → D x x idp
+    d : (x : A) → D x x refl
     d _ = ind== E e where
       E : (y₁ z₁ : A) → y₁ == z₁ → Type i
-      E _ _ q = idp ■₁ q == idp ■₂ q
+      E _ _ q = refl ■₁ q == refl ■₂ q
 
-      e : (x₁ : A) → E x₁ x₁ idp
-      e _ = idp
+      e : (x₁ : A) → E x₁ x₁ refl
+      e _ = refl
 
   ■₂=■₃ : ∀ {i} {A : Type i} {x y z : A}
     (p : x == y) (q : y == z) →  p ■₂ q == p ■₃ q
@@ -209,13 +214,13 @@ We now want to show that these constructions are pairwise equal. By this, we mea
     D : (x y : A) → x == y → Type i
     D _ y p = (q : y == z) → p ■₂ q == p ■₃ q
 
-    d : (x : A) → D x x idp
+    d : (x : A) → D x x refl
     d x = ind== E e where
       E : (y₁ z₁ : A) → y₁ == z₁ → Type i
-      E _ _ q = idp ■₂ q == idp ■₃ q
+      E _ _ q = refl ■₂ q == refl ■₃ q
 
-      e : (x₁ : A) → E x₁ x₁ idp
-      e _ = idp -- : concat2' idp idp == concat3' idp idp
+      e : (x₁ : A) → E x₁ x₁ refl
+      e _ = refl -- : concat2' refl refl == concat3' refl refl
 
 
   ■₁=■₃ : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) → p ■₁ q == p ■₃ q
@@ -223,13 +228,13 @@ We now want to show that these constructions are pairwise equal. By this, we mea
     D : (x y : A) → x == y → Type i
     D x y p = (q : y == z) →  p ■₁ q == p ■₃ q
 
-    d : (x : A) → D x x idp
+    d : (x : A) → D x x refl
     d _ = ind== E e where
       E : (y z : A) → (q : y == z) → Type i
-      E _ _ q =  idp ■₁ q == idp ■₃ q
+      E _ _ q =  refl ■₁ q == refl ■₃ q
 
-      e : (y : A) → E y y idp
-      e _ = idp -- : concat1' idp idp == concat3' idp idp
+      e : (y : A) → E y y refl
+      e _ = refl -- : concat1' refl refl == concat3' refl refl
 \end{code}
 \end{proof}
 
@@ -237,36 +242,72 @@ We now want to show that these constructions are pairwise equal. By this, we mea
 module Ex2-2 where
 
   open Ex2-1
+\end{code}
+\begin{lemma}[2.2.1]
 
-  {-
-  Show that the three equalities of proofs constructed in the previous exercise form a
+  The three equalities of proofs constructed in the previous exercise form a
   commutative triangle. In other words, if the three definitions of concatenation are denoted
-  by (p 1 q), (p 2 q), and (p 3 q), then the concatenated equality
-  (p 1 q) = (p 2 q) = (p 3 q)
+  by $(p \ct_1 q)$, $(p \ct_2 q)$, and $(p \ct_3 q)$, then the concatenated equality
+
+  \[ (p \ct_1 q) = (p \ct_2 q) = (p \ct_3 q) \]
+
   is equal to the equality
-  (p 1 q) = (p 3 q).
-  -}
+
+  \[ (p \ct_1 q) = (p \ct_3 q) \]
+
+\end{lemma}
+
+\begin{proof}
+
+Despite the fact that we're working with the somewhat myserious type
+of ``equalities of equalities'', this remains a statement about the
+propositional equality of two paths. The only tool we have for
+establishing such an equality is path induction.
+
+First, we fix the definition of concatenation:
+
+\begin{code}
+  _■_ = _■₁_
+
+\end{code}
+
+We must now show that, for all paths $p$, $q$, the proof that $p \ct_1 q$ is equal to
+$p \ct_2 q$ followed by the proof that $p \ct_2 q$ is equal to $p \ct_3 q$ is equal to
+the proof that $p \ct_1 q$ is equal to $p \ct_3 q$.
+
+This is exactly expressed in the following type signature:
 
 
-  -- likewise, the ind== version of the book concat operator
-  _■_ = _■₃_
+Since the theorem is quantified over two paths, we shall do double path induction.
+So, it really just boils down to the theorem being true when both p and q
+are the identity.
 
-  concat-commutative-triangle' : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) →
+\begin{code}
+  concat-commutative-triangle : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) →
     (■₁=■₂ p q) ■ (■₂=■₃ p q) == ■₁=■₃ p q
-  concat-commutative-triangle' {i} {A} {_} {_} {z} = ind== D d where
+
+  concat-commutative-triangle {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
     D _ y p = (q : y == z) →
       (■₁=■₂ p q) ■ (■₂=■₃ p q) == ■₁=■₃ p q
 
-    d : (x : A) → D x x idp
+    d : (x : A) → D x x refl
     d _ = ind== E e where
       E : (y z : A) → (q : y == z) → Type i
       E _ _ q =
-        (■₁=■₂ idp q) ■ (■₂=■₃ idp q) == ■₁=■₃ idp q
+        (■₁=■₂ refl q) ■ (■₂=■₃ refl q) == ■₁=■₃ refl q
 
-      e : (y : A) → E y y idp
-      e _ = idp -- : concat' (concat1'=concat2' idp idp) (concat2'=concat3' idp idp) == concat1'=concat3' idp idp
+      e : (y : A) → E y y refl
+      e _ = refl
 
+\end{code}
+\end{proof}
+
+At this point, it might be helpful to review the definitions of the different
+concatenation functions. In particular, $\refl \ct \refl ≡ \refl$ where $\ct$
+is any of $\ct_1$, $\ct_2$, or $\ct_3$.
+
+\begin{code}
 module Ex2-3 where
 
   -- use another of the based path inductions
