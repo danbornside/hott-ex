@@ -64,6 +64,8 @@ open import Base
 open import Ch1
 \end{code}
 
+\section{}
+
 \begin{lemma}[2.1.2]
   For every type $A$ and every $x, y, z : A$ there is a function
   $(x = y) → (y = z) → (x = z)$
@@ -189,7 +191,7 @@ we mean ``propositional equality'' - hence we must find paths between
 each pair of constructions.
 
 In each case, we perform a double induction on paths, first reducing
-$p$ to $\refl$, and then reducing $q$ to $\refl$.
+$p$ to $\refl{}$, and then reducing $q$ to $\refl{}$.
 
 \begin{code}
 
@@ -236,6 +238,8 @@ $p$ to $\refl$, and then reducing $q$ to $\refl$.
       e _ = refl -- : concat1' refl refl == concat3' refl refl
 \end{code}
 \end{proof}
+
+\section{}
 
 \begin{lemma}[2.2.1]
 
@@ -298,14 +302,17 @@ concat-commutative-triangle {i} {A} {_} {_} {z} = ind== D d where
 \end{proof}
 
 At this point, it might be helpful to review the definitions of the different
-concatenation functions. In particular, $\refl \ct \refl ≡ \refl$ where $\ct$
+concatenation functions. In particular, $\refl \ct \refl{} ≡ \refl{}$ where $\ct$
 is any of $\ct_1$, $\ct_2$, or $\ct_3$.
 
 
-\begin{definition}[2.4]
+\section{}
+
+\section{}
+
+
 Define, by induction on n, a general notion of n-dimensional path in a type A,
 simultaneously with the type of boundaries for such paths.
-\end{definition}
 
 We'll define $n$-paths recursively in terms of $n - 1$ paths by
 recursion on $\mathbb{N}$. There are two cases. Given
@@ -337,6 +344,7 @@ map from the $n$-cube to a point.
 
 \begin{code}
 refln : ∀ {i} (A : Type i) (a : A) -> (n : ℕ) -> npaths A n
+-- TODO: Fix module stuff so I can write "indN" instead of "Ex1-4.indN"
 refln A a = Ex1-4.indN a E where
   E = λ n → λ q → q , (q , refl)
 
