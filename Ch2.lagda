@@ -61,6 +61,7 @@
 module Ch2 where
 
 open import Base
+open import Ch1
 \end{code}
 
 \begin{lemma}[2.1.2]
@@ -100,10 +101,8 @@ hence
 So, given a path from $x$ to $z$, we want a path from $x$ to $z$. We'll take the easy way out on this one!
 
 \begin{code}
-
-module Ex2-1 where
-  _■₁_ : ∀ {i} {A : Type i} {x y z : A} → (x == y) → (y == z) → (x == z)
-  _■₁_ {i} {A} {_} {_} {z} = ind== D d where
+_■₁_ : ∀ {i} {A : Type i} {x y z : A} → (x == y) → (y == z) → (x == z)
+_■₁_ {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → (p : x == y) → Type i
     D x y _ = y == z → x == z
 
@@ -131,8 +130,8 @@ This is a bit trickier in Agda, because we really want to define a curried funct
 However, we also want the type to be exactly the same as the types of the other constructions. Hence, we will use a twist map.
 
 \begin{code}
-  _■₂_ : ∀ {i} {A : Type i} {x y z : A} → (x == y) → (y == z) → (x == z)
-  _■₂_ = twist concat2 where
+_■₂_ : ∀ {i} {A : Type i} {x y z : A} → (x == y) → (y == z) → (x == z)
+_■₂_ = twist concat2 where
     concat2 : ∀ {i} {A : Type i} {x y z : A} → (y == z) → (x == y) → (x == z)
     concat2 {i} {A} {x} {_} {_} = ind== D d where
       D : (y z : A) → (q : y == z) → Type i
@@ -170,8 +169,8 @@ which is gotten quite easily:
 
 \begin{code}
 
-  _■₃_ : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
-  _■₃_ {i} {A} {_} {_} {z} = ind== D d where
+_■₃_ : ∀ {i} {A : Type i} {x y z : A} → x == y → y == z → x == z
+_■₃_ {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → (p : x == y) → Type i
     D x y _ = y == z → x == z
 
@@ -194,9 +193,9 @@ $p$ to $\refl$, and then reducing $q$ to $\refl$.
 
 \begin{code}
 
-  ■₁=■₂ : ∀ {i} {A : Type i} {x y z : A}
+■₁=■₂ : ∀ {i} {A : Type i} {x y z : A}
     (p : x == y) (q : y == z) → p ■₁ q == p ■₂ q
-  ■₁=■₂ {i} {A} {_} {_} {z} = ind== D d where
+■₁=■₂ {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
     D _ y p = (q : y == z) →  p ■₁ q == p ■₂ q
 
@@ -208,9 +207,9 @@ $p$ to $\refl$, and then reducing $q$ to $\refl$.
       e : (x₁ : A) → E x₁ x₁ refl
       e _ = refl
 
-  ■₂=■₃ : ∀ {i} {A : Type i} {x y z : A}
+■₂=■₃ : ∀ {i} {A : Type i} {x y z : A}
     (p : x == y) (q : y == z) →  p ■₂ q == p ■₃ q
-  ■₂=■₃ {i} {A} {x} {y} {z} = ind== D d where
+■₂=■₃ {i} {A} {x} {y} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
     D _ y p = (q : y == z) → p ■₂ q == p ■₃ q
 
@@ -223,8 +222,8 @@ $p$ to $\refl$, and then reducing $q$ to $\refl$.
       e _ = refl -- : concat2' refl refl == concat3' refl refl
 
 
-  ■₁=■₃ : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) → p ■₁ q == p ■₃ q
-  ■₁=■₃ {i} {A} {_} {_} {z} = ind== D d where
+■₁=■₃ : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) → p ■₁ q == p ■₃ q
+■₁=■₃ {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
     D x y p = (q : y == z) →  p ■₁ q == p ■₃ q
 
@@ -238,11 +237,6 @@ $p$ to $\refl$, and then reducing $q$ to $\refl$.
 \end{code}
 \end{proof}
 
-\begin{code}
-module Ex2-2 where
-
-  open Ex2-1
-\end{code}
 \begin{lemma}[2.2.1]
 
   The three equalities of proofs constructed in the previous exercise form a
@@ -267,7 +261,7 @@ establishing such an equality is path induction.
 First, we fix the definition of concatenation:
 
 \begin{code}
-  _■_ = _■₁_
+_■_ = _■₁_
 
 \end{code}
 
@@ -283,10 +277,10 @@ So, it really just boils down to the theorem being true when both p and q
 are the identity.
 
 \begin{code}
-  concat-commutative-triangle : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) →
+concat-commutative-triangle : ∀ {i} {A : Type i} {x y z : A} (p : x == y) (q : y == z) →
     (■₁=■₂ p q) ■ (■₂=■₃ p q) == ■₁=■₃ p q
 
-  concat-commutative-triangle {i} {A} {_} {_} {z} = ind== D d where
+concat-commutative-triangle {i} {A} {_} {_} {z} = ind== D d where
     D : (x y : A) → x == y → Type i
     D _ y p = (q : y == z) →
       (■₁=■₂ p q) ■ (■₂=■₃ p q) == ■₁=■₃ p q
@@ -307,17 +301,53 @@ At this point, it might be helpful to review the definitions of the different
 concatenation functions. In particular, $\refl \ct \refl ≡ \refl$ where $\ct$
 is any of $\ct_1$, $\ct_2$, or $\ct_3$.
 
+
+\begin{definition}[2.4]
+Define, by induction on n, a general notion of n-dimensional path in a type A,
+simultaneously with the type of boundaries for such paths.
+\end{definition}
+
+We'll define $n$-paths recursively in terms of $n - 1$ paths by
+recursion on $\mathbb{N}$. There are two cases. Given
+a type $A$:
+
+A $0$-path is an inhabitant of $A$.
+
+A $n$-path, for $n > 0$, is an inhabitant of $p = q$ where $p$ and $q$ are
+$(n - 1)$-paths.
+
+I'm going to take two steps and then settle it once and for all!
+
 \begin{code}
-module Ex2-3 where
+data _==2_ {i} {A : Type i} {a : A} {b : A} (p : a == b) : (a == b) -> Type i where
+  refl2 : p ==2 p
 
-  -- use another of the based path inductions
+data _==3_ {i} {A : Type i} {a : A} {b : A} {p : a == b} {q : a == b} (α : p == q) : (p == q) -> Type i where
+  refl3 : α ==3 α
 
-module Ex2-4 where
+npaths : ∀ {i} (A : Type i) -> ℕ -> Type i
+npaths {i} A 0 = A
+npaths {i} A (S n) = Σ (npaths A n) λ q -> Σ (npaths A n) (λ p → p == q)
 
-{- Define, by induction on n, a general notion of n-dimensional path in a type A,
-simultaneously with the type of boundaries for such paths. -}
+\end{code}
 
+This is not required by the exercise, but let's define the $n$-dimensional
+identity by induction on $\mathbb{N}$. In topology, this would be the constant
+map from the $n$-cube to a point.
 
+\begin{code}
+refln : ∀ {i} (A : Type i) (a : A) -> (n : ℕ) -> npaths A n
+refln A a = Ex1-4.indN a E where
+  E = λ n → λ q → q , (q , refl)
+
+\end{code}
+
+Okay, now we have to define a boundary map on npaths. The boundary of an
+n-path should be a pair of $(n-1)$-paths:
+
+\begin{code}
+boundary : ∀ {i} {A : Type i} {n : ℕ} -> (npaths A (S n)) -> (npaths A n) × (npaths A n)
+boundary {i} {A} {n} (p , (q , α)) = (p , q)
 \end{code}
 
 \end{document}
