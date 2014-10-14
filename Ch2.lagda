@@ -329,7 +329,8 @@ I'm going to take two steps and then settle it once and for all!
 data _==2_ {i} {A : Type i} {a : A} {b : A} (p : a == b) : (a == b) -> Type i where
   refl2 : p ==2 p
 
-data _==3_ {i} {A : Type i} {a : A} {b : A} {p : a == b} {q : a == b} (α : p == q) : (p == q) -> Type i where
+data _==3_ {i} {A : Type i} {a : A} {b : A} {p : a == b} {q : a == b}
+    (α : p == q) : (p == q) -> Type i where
   refl3 : α ==3 α
 
 npaths : ∀ {i} (A : Type i) -> ℕ -> Type i
@@ -354,7 +355,8 @@ Okay, now we have to define a boundary map on npaths. The boundary of an
 n-path should be a pair of $(n-1)$-paths:
 
 \begin{code}
-boundary : ∀ {i} {A : Type i} {n : ℕ} -> (npaths A (S n)) -> (npaths A n) × (npaths A n)
+boundary : ∀ {i} {A : Type i} {n : ℕ} ->
+  (npaths A (S n)) -> (npaths A n) × (npaths A n)
 boundary {i} {A} {n} (p , (q , α)) = (p , q)
 \end{code}
 
