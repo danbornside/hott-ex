@@ -329,6 +329,9 @@ I'm going to take two steps and then settle it once and for all!
 1paths : ∀ {i} (A : Type i) -> Type i
 1paths A = Σ A (λ a -> Σ A (λ b -> (a == b)))
 
+δ₁ : ∀ {i} {A : Type i} -> (p : 1paths A) -> A × A
+δ₁ (a , (b , p)) = (a , b)
+
 src : ∀ {i} {A : Type i} {a : A} {b : A} -> a == b -> A
 src {_} {_} {a} {_} p = a
 
@@ -350,18 +353,39 @@ inverse {i} {A} = ind== D d where
   d : (x : A) → D x x refl
   d _ = refl
 
-δ₂ : ∀ {i} {A : Type i} -> 2paths A -> 1paths A
-δ₂ (p , (q , (x , (y , α)))) =
+-- Just to be cute
+δ₂-loop : ∀ {i} {A : Type i} -> 2paths A -> 1paths A
+δ₂-loop (p , (q , (x , (y , α)))) =
   (src (map p) , (src (map p) ,
     ((x ■ (map q)) ■ (inverse y)) ■ (inverse (map p))))
+
+δ₂ : ∀ {i} {A : Type i} -> 2paths A -> (1paths A) × (1paths A)
+δ₂ {i} {A} (p , (q , (x , (y , α)))) =
+  ((fst δp) , (snd δq , x ■ (map q))) , (fst δp , (snd δq , map p ■ y)) where
+    δp : A × A
+    δp = δ₁ p
+    δq : A × A
+    δq = δ₁ q
+
+δ₂' : ∀ {i} {A : Type i} -> (p : 2paths A) ->
+  ((fst (δ₁ {i} {A} (fst p))) ==  (snd (δ₁ {i} {A} (fst (snd p)))))
+  × ((fst (δ₁ {i} {A} (fst p))) ==  (snd (δ₁ {i} {A} (fst (snd p)))))
+δ₂' {i} {A} (p , (q , (x , (y , α)))) = x ■ (map q) , (map p) ■ y
 
 map2 : ∀ {i} {A : Type i} -> (p : (2paths A)) -> fst (snd (snd p)) ■ map (fst (snd p)) == map (fst p) ■ fst (snd (snd (snd p)))
 map2 p = snd (snd (snd (snd p)))
 
-3paths : ∀ {i} (A : Type i) -> Type i
-3paths A = Σ (2paths A) λ p -> Σ (2paths A) λ q →
-  Σ ((src (map2 p)) == (src (map2 q))) λ x → Σ (dst (map2 p)) == (dst (map2 q)) λ y →
-    x ■ (map q) == (map p) ■ y
+--3paths : ∀ {i} (A : Type i) -> Type i
+--3paths A = Σ (2paths A) λ α -> Σ (2paths A) λ β →
+--  Σ ((fst (δ₂' α)) == (fst (δ₂' β))) λ ψ ->
+--    Σ ((snd (δ₂' α)) == (snd (δ₂' β))) λ φ ->
+--      ψ ■ β == α ■ φ
+
+1paths' : ∀ {i} {A : Type i} {a : A} {b : A} -> Type i
+1paths' {_} {_} {a} {b} = a == b
+
+2paths' : ∀ {i} {A : Type i} {a : A} {b : A} {p : 1paths' {i} {A} {a} {b}} {q : 1paths' {i} {A} {a} {b}} -> Type i
+2paths' {_} {_} {p} {q} = p == q
 
 \end{code}
 
