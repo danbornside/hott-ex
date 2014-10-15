@@ -326,38 +326,118 @@ $(n - 1)$-paths.
 I'm going to take two steps and then settle it once and for all!
 
 \begin{code}
-data _==2_ {i} {A : Type i} {a : A} {b : A} (p : a == b) : (a == b) -> Type i where
-  refl2 : p ==2 p
+1paths : ∀ {i} (A : Type i) -> Type i
+1paths A = Σ A (λ a -> Σ A (λ b -> (a == b)))
 
-data _==3_ {i} {A : Type i} {a : A} {b : A} {p : a == b} {q : a == b}
-    (α : p == q) : (p == q) -> Type i where
-  refl3 : α ==3 α
+src : ∀ {i} {A : Type i} (p : (1paths A)) -> A
+src p = fst p
 
-npaths : ∀ {i} (A : Type i) -> ℕ -> Type i
-npaths {i} A 0 = A
-npaths {i} A (S n) = Σ (npaths A n) λ q -> Σ (npaths A n) (λ p → p == q)
+dst : ∀ {i} {A : Type i} (p : (1paths A)) -> A
+dst p = fst (snd p)
+
+map : ∀ {i} {A : Type i} (p : (1paths A)) -> (src p) == (dst p)
+map p = snd (snd p)
+
+2paths : ∀ {i} (A : Type i) -> Type i
+2paths A = Σ (1paths A) λ p -> Σ (1paths A) λ q →
+  Σ ((src p) == (src q)) λ x → Σ ((dst p) == (dst q)) λ y →
+    x ■ (map q) == (map p) ■ y
+
+inverse : ∀ {i} {A : Type i} {a : A} {b : A} -> a == b -> b == a
+inverse {i} {A} = ind== D d where
+    D : (a b : A) (p : a == b) → Type i
+    D a b _ = b == a
+
+    d : (x : A) → D x x refl
+    d _ = refl
+
+2pathBoundary : ∀ {i} {A : Type i} -> 2paths A -> 1paths A
+2pathBoundary (p , (q , (x , (y , α )))) = (src p , (src p ,
+          ((x ■ (map q)) ■ (inverse y)) ■ (inverse (map p))))
 
 \end{code}
+
+3paths : ∀ {i} (A : Type i) -> Type i
+3paths A = Σ (2paths A) λ p -> Σ (2paths A) λ q →
+  Σ ((fst p) == (fst q)) λ x → Σ ((fst (snd p)) == (fst (snd q))) λ y →
+    ( x ■ (snd (snd q))) == ((snd (snd p)) ■ y)
+
+npaths : ∀ {i} (A : Type i) -> ℕ -> Type i
+npaths {i} A 0 = 1paths A
+npaths {i} A (S n) = Σ (npaths A n) λ p -> Σ (npaths A n) λ q →
+  Σ ((fst p) == (fst q)) λ x → Σ ((fst (snd p)) == (fst (snd q))) λ y →
+    ( x ■ (snd (snd q))) == ((snd (snd p)) ■ y)
+
 
 This is not required by the exercise, but let's define the $n$-dimensional
 identity by induction on $\mathbb{N}$. In topology, this would be the constant
 map from the $n$-cube to a point.
 
-\begin{code}
+%\begin{code}
 refln : ∀ {i} (A : Type i) (a : A) -> (n : ℕ) -> npaths A n
 -- TODO: Fix module stuff so I can write "indN" instead of "Ex1-4.indN"
-refln A a = Ex1-4.indN a E where
+refln A a = Ex1-4.indN (a , (a , refl)) E where
   E = λ n → λ q → q , (q , refl)
 
-\end{code}
+%\end{code}
 
 Okay, now we have to define a boundary map on npaths. The boundary of an
 n-path should be a pair of $(n-1)$-paths:
 
-\begin{code}
+%\begin{code}
 boundary : ∀ {i} {A : Type i} {n : ℕ} ->
   (npaths A (S n)) -> (npaths A n) × (npaths A n)
 boundary {i} {A} {n} (p , (q , α)) = (p , q)
-\end{code}
+%\end{code}
+
+
+%\begin{code}
+
+boundaryHasEqualStart : ∀ {i} {A : Type i} {n : ℕ} ->
+   (p : (npaths A (S n))) -> (fst (fst (boundary {i} {A} {n} p))) == (fst (snd (boundary {i} {A} {n} p)))
+boundaryHasEqualStart {i} {A} {0} α = {!!} where
+  p' : npaths A (S 0)
+  p' = (fst (boundary {i} {A} {(S 0)} α ))
+  p1 : npaths A 0
+  p1 = fst p'
+  p2 : npaths A 0
+  p2 = fst (snd p')
+  p : p2 == p1
+  p = snd (snd p')
+  q' : npaths A (S 0)
+  q' = (snd (boundary {i} {A} {(S 0)} α))
+  q1 : (npaths A 0)
+  q1 = fst q'
+  q2 : (npaths A 0)
+  q2 = fst (snd q')
+  q : q2 == q1
+  q = snd (snd q')
+
+
+boundaryHasEqualStart {i} {A} {(S n)} p = {!!} where
+  q1 :  (npaths A (S (S n)))
+  q1 = (fst (boundary {i} {A} {(S (S n))} p))
+  q11 : (npaths A (S n))
+  q11 = fst q1
+  q12 : (npaths A (S n))
+  q12 = fst (snd q1)
+  α : q12 == q11
+  α = snd (snd q1)
+  q2 : (npaths A (S (S n)))
+  q2 = (snd (boundary {i} {A} {(S (S n))} p))
+  q21 : (npaths A (S n))
+  q21 = fst q2
+  q22 : (npaths A (S n))
+  q22 = fst (snd q2)
+  β : q22 == q21
+  β = snd (snd q2)
+--  γ : q12 == q22
+--  γ = boundaryHasEqualStart
+
+contBoundary : ∀ {i} {A : Type i} (n : ℕ) ->
+  (npaths A (S (S n))) -> (npaths A (S n))
+contBoundary n ( (q1 , (q2 , p1)) , ( (q1' , (q2' , p2)) , α )) = q1 , (q2' , {!!})
+
+%\end{code}
 
 \end{document}
