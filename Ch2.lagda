@@ -326,12 +326,15 @@ $(n - 1)$-paths.
 I'm going to take two steps and then settle it once and for all!
 
 \begin{code}
+-- a 1-path is a pair of points together with a path between them
 1paths : ∀ {i} (A : Type i) -> Type i
 1paths A = Σ A (λ a -> Σ A (λ b -> (a == b)))
 
+-- the boundary of a 1-path is a pair of points
 δ₁ : ∀ {i} {A : Type i} -> (p : 1paths A) -> A × A
 δ₁ (a , (b , p)) = (a , b)
 
+-- Some convenience functions!
 src : ∀ {i} {A : Type i} {a : A} {b : A} -> a == b -> A
 src {_} {_} {a} {_} p = a
 
@@ -341,11 +344,21 @@ dst {_} {_} {_} {b} p = b
 map : ∀ {i} {A : Type i} (p : (1paths A)) -> (fst p) == (fst (snd p))
 map p = snd (snd p)
 
+-- a 2-path is a pair of 1 paths, proofs that their sources and destinations are equal
+-- and a "diagonal path" between paths:
+--   .----p----.
+--   |         |
+--   |         |
+--   x    α    y
+--   |         |
+--   |         |
+--   .----q----.
 2paths : ∀ {i} (A : Type i) -> Type i
 2paths A = Σ (1paths A) λ p -> Σ (1paths A) λ q →
   Σ ((src (map p)) == (src (map q))) λ x → Σ ((dst (map p)) == (dst (map q))) λ y →
     x ■ (map q) == (map p) ■ y
 
+-- Definition of inverses. This should be put somewhere else.
 inverse : ∀ {i} {A : Type i} {a : A} {b : A} -> a == b -> b == a
 inverse {i} {A} = ind== D d where
   D : (a b : A) (p : a == b) → Type i
@@ -353,12 +366,13 @@ inverse {i} {A} = ind== D d where
   d : (x : A) → D x x refl
   d _ = refl
 
--- Just to be cute
+-- Just to be cute - the boundary of a 2 path as a loop
 δ₂-loop : ∀ {i} {A : Type i} -> 2paths A -> 1paths A
 δ₂-loop (p , (q , (x , (y , α)))) =
   (src (map p) , (src (map p) ,
     ((x ■ (map q)) ■ (inverse y)) ■ (inverse (map p))))
 
+-- The boundary of a 2 path as a pair of 1 paths
 δ₂ : ∀ {i} {A : Type i} -> 2paths A -> (1paths A) × (1paths A)
 δ₂ {i} {A} (p , (q , (x , (y , α)))) =
   ((fst δp) , (snd δq , x ■ (map q))) , (fst δp , (snd δq , map p ■ y)) where
@@ -367,45 +381,38 @@ inverse {i} {A} = ind== D d where
     δq : A × A
     δq = δ₁ q
 
+-- the boundary of a 2 path as a pair of paths
 δ₂' : ∀ {i} {A : Type i} -> (p : 2paths A) ->
   ((fst (δ₁ {i} {A} (fst p))) ==  (snd (δ₁ {i} {A} (fst (snd p)))))
   × ((fst (δ₁ {i} {A} (fst p))) ==  (snd (δ₁ {i} {A} (fst (snd p)))))
 δ₂' {i} {A} (p , (q , (x , (y , α)))) = x ■ (map q) , (map p) ■ y
 
-map2 : ∀ {i} {A : Type i} -> (p : (2paths A)) -> fst (snd (snd p)) ■ map (fst (snd p)) == map (fst p) ■ fst (snd (snd (snd p)))
+-- given a two path (which is a sigma type that carries lots of
+-- information), the actual path
+map2 : ∀ {i} {A : Type i} -> (p : (2paths A)) ->
+  fst (snd (snd p)) ■ map (fst (snd p)) == map (fst p) ■ fst (snd (snd (snd p)))
 map2 p = snd (snd (snd (snd p)))
 
+-- To make this work, we need proofs that the boundaries are equal
+-- "All the way down". So... the sigma type needs to get larger and larger...
 --3paths : ∀ {i} (A : Type i) -> Type i
 --3paths A = Σ (2paths A) λ α -> Σ (2paths A) λ β →
 --  Σ ((fst (δ₂' α)) == (fst (δ₂' β))) λ ψ ->
 --    Σ ((snd (δ₂' α)) == (snd (δ₂' β))) λ φ ->
 --      ψ ■ β == α ■ φ
 
+-- Different approach: given two points, a 1 path is...
 1paths' : ∀ {i} {A : Type i} {a : A} {b : A} -> Type i
 1paths' {_} {_} {a} {b} = a == b
 
-2paths' : ∀ {i} {A : Type i} {a : A} {b : A} {p : 1paths' {i} {A} {a} {b}} {q : 1paths' {i} {A} {a} {b}} -> Type i
+-- Given two points and two paths between those points, a 2 path is...
+2paths' : ∀ {i} {A : Type i} {a : A} {b : A}
+  {p : 1paths' {i} {A} {a} {b}} {q : 1paths' {i} {A} {a} {b}}
+    -> Type i
 2paths' {_} {_} {p} {q} = p == q
 
+-- I give up!
+
 \end{code}
-
-npaths : ∀ {i} (A : Type i) -> ℕ -> Type i
-npaths {i} A 0 = 1paths A
-npaths {i} A (S n) = Σ (npaths A n) λ p -> Σ (npaths A n) λ q →
-  Σ ((fst p) == (fst q)) λ x → Σ ((fst (snd p)) == (fst (snd q))) λ y →
-    ( x ■ (snd (snd q))) == ((snd (snd p)) ■ y)
-
-
-This is not required by the exercise, but let's define the $n$-dimensional
-identity by induction on $\mathbb{N}$. In topology, this would be the constant
-map from the $n$-cube to a point.
-
-%\begin{code}
-refln : ∀ {i} (A : Type i) (a : A) -> (n : ℕ) -> npaths A n
--- TODO: Fix module stuff so I can write "indN" instead of "Ex1-4.indN"
-refln A a = Ex1-4.indN (a , (a , refl)) E where
-  E = λ n → λ q → q , (q , refl)
-
-%\end{code}
 
 \end{document}
