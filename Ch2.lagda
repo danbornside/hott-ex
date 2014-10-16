@@ -310,30 +310,61 @@ is any of $\ct_1$, $\ct_2$, or $\ct_3$.
 
 \section{}
 
+Let's try to do it one stage at a time:
 
-Define, by induction on n, a general notion of n-dimensional path in a type A,
-simultaneously with the type of boundaries for such paths.
-
-We'll define $n$-paths recursively in terms of $n - 1$ paths by
-recursion on $\mathbb{N}$. There are two cases. Given
-a type $A$:
-
-A $1$-path is a path in $A$.
-
-A $n$-path, for $n > 0$, is an inhabitant of $p = q$ where $p$ and $q$ are
-$(n - 1)$-paths.
-
-I'm going to take two steps and then settle it once and for all!
+\begin{itemize}
+\item a 0-path is a point in $A$.
+\item a 1-path is a path between 0-paths.
+\end{itemize}
 
 \begin{code}
--- a 1-path is a pair of points together with a path between them
-1paths : ∀ {i} (A : Type i) -> Type i
-1paths A = Σ A (λ a -> Σ A (λ b -> (a == b)))
 
--- the boundary of a 1-path is a pair of points
-δ₁ : ∀ {i} {A : Type i} -> (p : 1paths A) -> A × A
+0-path : ∀ {i} (A : Type i) -> Type i
+0-path A = A
+
+1-path : ∀ {i} (A : Type i) -> Type i
+1-path A = Σ (0-path A) (λ a -> Σ (0-path A) (λ b -> (a == b)))
+
+-- the boundary of a 1-path is a pair of 0-paths
+δ₁ : ∀ {i} {A : Type i} -> (p : 1-path A) -> (0-path A) × (0-path A)
 δ₁ (a , (b , p)) = (a , b)
 
+\end{code}
+
+The boundary of a 0-path is somewhat mysterious, so we shall leave it
+undefined.
+
+We now would like to define a 2-path as a path between 1-paths. However,
+two arbitrary 1-paths look like this:
+
+\[
+\xymatrix{
+a \ar[r]^-{p} & b \\
+a' \ar[r]^-{q} & b' }
+\]
+
+That is, $p$ and $q$ are paths between different points. Hence, a path
+between $p$ and $q$ doesn't make sense. That is, it's not well typed.
+
+However, suppose we have paths $x,y$ as follows:
+
+\[
+\xymatrix{
+a \ar[r]^-{p} \ar[d]^-{x} & b \ar[d]^-{y} \\
+a' \ar[r]^-{q} & b' }
+\]
+
+It would certainly make sense to ask for a path of type $ p \ct y = x \ct q $.
+
+So, it seems that to define 2-paths, we need pairs of 1-paths together with
+vertical paths like $x$ and $y$ above. So we'll define it as a $\Sigma$-type:
+
+\[ \Sigma_{p,q : \mbox{1-paths}} \Sigma_{x : \mbox{src p } = \mbox{ src q}}
+   \Sigma_{ \mbox{dst p } = \mbox{ dst q}} p \ct y = x \ct q \]
+
+We will write down some helper functions and then formalize this:
+
+\begin{code}
 -- Some convenience functions!
 src : ∀ {i} {A : Type i} {a : A} {b : A} -> a == b -> A
 src {_} {_} {a} {_} p = a
@@ -341,23 +372,27 @@ src {_} {_} {a} {_} p = a
 dst : ∀ {i} {A : Type i} {a : A} {b : A} -> a == b -> A
 dst {_} {_} {_} {b} p = b
 
-map : ∀ {i} {A : Type i} (p : (1paths A)) -> (fst p) == (fst (snd p))
+map : ∀ {i} {A : Type i} (p : (1-path A)) -> (fst p) == (fst (snd p))
 map p = snd (snd p)
 
--- a 2-path is a pair of 1 paths, proofs that their sources and destinations are equal
--- and a "diagonal path" between paths:
---   .----p----.
---   |         |
---   |         |
---   x    α    y
---   |         |
---   |         |
---   .----q----.
-2paths : ∀ {i} (A : Type i) -> Type i
-2paths A = Σ (1paths A) λ p -> Σ (1paths A) λ q →
+2-path : ∀ {i} (A : Type i) -> Type i
+2-path A = Σ (1-path A) λ p -> Σ (1-path A) λ q →
   Σ ((src (map p)) == (src (map q))) λ x → Σ ((dst (map p)) == (dst (map q))) λ y →
     x ■ (map q) == (map p) ■ y
 
+-- The boundary of a 2 path as a pair of 1 paths
+δ₂ : ∀ {i} {A : Type i} -> 2-path A -> (1-path A) × (1-path A)
+δ₂ {i} {A} (p , (q , (x , (y , α)))) =
+  ((fst δp) , (snd δq , x ■ (map q))) , (fst δp , (snd δq , map p ■ y)) where
+    δp : A × A
+    δp = δ₁ p
+    δq : A × A
+    δq = δ₁ q
+\end{code}
+
+A boundary of a 2-path can be thought of as a loop. We can formalize this:
+
+\begin{code}
 -- Definition of inverses. This should be put somewhere else.
 inverse : ∀ {i} {A : Type i} {a : A} {b : A} -> a == b -> b == a
 inverse {i} {A} = ind== D d where
@@ -367,52 +402,32 @@ inverse {i} {A} = ind== D d where
   d _ = refl
 
 -- Just to be cute - the boundary of a 2 path as a loop
-δ₂-loop : ∀ {i} {A : Type i} -> 2paths A -> 1paths A
+δ₂-loop : ∀ {i} {A : Type i} -> 2-path A -> 1-path A
 δ₂-loop (p , (q , (x , (y , α)))) =
   (src (map p) , (src (map p) ,
     ((x ■ (map q)) ■ (inverse y)) ■ (inverse (map p))))
+\end{code}
 
--- The boundary of a 2 path as a pair of 1 paths
-δ₂ : ∀ {i} {A : Type i} -> 2paths A -> (1paths A) × (1paths A)
-δ₂ {i} {A} (p , (q , (x , (y , α)))) =
-  ((fst δp) , (snd δq , x ■ (map q))) , (fst δp , (snd δq , map p ■ y)) where
-    δp : A × A
-    δp = δ₁ p
-    δq : A × A
-    δq = δ₁ q
+If one tries to continue in this manner, the $Σ$-types will become
+rather large! So it would be nice to appeal to some kind of recursion
+at this point.
 
--- the boundary of a 2 path as a pair of paths
-δ₂' : ∀ {i} {A : Type i} -> (p : 2paths A) ->
-  ((fst (δ₁ {i} {A} (fst p))) ==  (snd (δ₁ {i} {A} (fst (snd p)))))
-  × ((fst (δ₁ {i} {A} (fst p))) ==  (snd (δ₁ {i} {A} (fst (snd p)))))
-δ₂' {i} {A} (p , (q , (x , (y , α)))) = x ■ (map q) , (map p) ■ y
+Luckily, it turns out that equality of inhabitants of $Σ$-types contain
+all the lower dimensional equalities to make this work!
 
--- given a two path (which is a sigma type that carries lots of
--- information), the actual path
-map2 : ∀ {i} {A : Type i} -> (p : (2paths A)) ->
-  fst (snd (snd p)) ■ map (fst (snd p)) == map (fst p) ■ fst (snd (snd (snd p)))
-map2 p = snd (snd (snd (snd p)))
+\begin{code}
 
--- To make this work, we need proofs that the boundaries are equal
--- "All the way down". So... the sigma type needs to get larger and larger...
---3paths : ∀ {i} (A : Type i) -> Type i
---3paths A = Σ (2paths A) λ α -> Σ (2paths A) λ β →
---  Σ ((fst (δ₂' α)) == (fst (δ₂' β))) λ ψ ->
---    Σ ((snd (δ₂' α)) == (snd (δ₂' β))) λ φ ->
---      ψ ■ β == α ■ φ
+n-path : ∀ {i} {A : Type i} -> ℕ -> Type i
+n-path {i} {A} 0 = A
+n-path {i} {A} (S n) = Σ (n-path {i} {A} n) λ p -> Σ (n-path {i} {A} n) λ q -> p == q
 
--- Different approach: given two points, a 1 path is...
-1paths' : ∀ {i} {A : Type i} {a : A} {b : A} -> Type i
-1paths' {_} {_} {a} {b} = a == b
-
--- Given two points and two paths between those points, a 2 path is...
-2paths' : ∀ {i} {A : Type i} {a : A} {b : A}
-  {p : 1paths' {i} {A} {a} {b}} {q : 1paths' {i} {A} {a} {b}}
-    -> Type i
-2paths' {_} {_} {p} {q} = p == q
-
--- I give up!
+δ : ∀ {i} {A : Type i} -> (n : ℕ) ->
+  (n-path {i} {A} (S n)) -> (n-path {i} {A} n) × (n-path {i} {A} n)
+δ n p = fst p , fst (snd p)
 
 \end{code}
+
+This is not evidently geometric. To make the connection, we need to use some
+facts about equalities of sigma types.
 
 \end{document}
