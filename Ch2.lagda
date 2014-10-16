@@ -408,11 +408,11 @@ inverse {i} {A} = ind== D d where
     ((x ■ (map q)) ■ (inverse y)) ■ (inverse (map p))))
 \end{code}
 
-If one tries to continue in this manner, the $Σ$-types will become
+If one tries to continue in this manner, the $\Sigma$-types will become
 rather large! So it would be nice to appeal to some kind of recursion
 at this point.
 
-Luckily, it turns out that equality of inhabitants of $Σ$-types contain
+Luckily, it turns out that equality of inhabitants of $\Sigma$-types contain
 all the lower dimensional equalities to make this work!
 
 \begin{code}
