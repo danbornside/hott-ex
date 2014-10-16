@@ -382,12 +382,7 @@ map p = snd (snd p)
 
 -- The boundary of a 2 path as a pair of 1 paths
 δ₂ : ∀ {i} {A : Type i} -> 2-path A -> (1-path A) × (1-path A)
-δ₂ {i} {A} (p , (q , (x , (y , α)))) =
-  ((fst δp) , (snd δq , x ■ (map q))) , (fst δp , (snd δq , map p ■ y)) where
-    δp : A × A
-    δp = δ₁ p
-    δq : A × A
-    δq = δ₁ q
+δ₂ {i} {A} (p , (q , (x , (y , α)))) = p , q
 \end{code}
 
 A boundary of a 2-path can be thought of as a loop. We can formalize this:
