@@ -425,4 +425,77 @@ n-path {i} {A} (S n) = Σ (n-path {i} {A} n) λ p -> Σ (n-path {i} {A} n) λ q 
 This is not evidently geometric. To make the connection, we need to use some
 facts about equalities of sigma types.
 
+\begin{code}
+
+Σ-path-trans : ∀ {i} {A : Type i} {P : A -> Type i}
+  -> {w : Σ A P} -> {w' : Σ A P} -> w == w'
+    -> (Σ ((fst w) == (fst w')) λ p
+      -> (transport {i} {i} {A} P p (snd w)) == (snd w'))
+Σ-path-trans {i} {A} {P} = ind== D d where
+  D : (w : Σ A P) -> (w' : Σ A P) -> w == w' → Type i
+  D w w' _ = (Σ ((fst w) == (fst w')) λ p
+             -> (transport {i} {i} {A} P p (snd w)) == (snd w'))
+  d : (w : Σ A P) → D w w refl
+  d _ = refl , refl
+\end{code}
+
+\begin{lemma}
+If $n > 1$, then the boundary of an $n$-path is a closed $(n-1)$-path.
+\end{lemma}
+\begin{proof}
+The following code corresponds to this diagram:
+
+\[
+\xymatrix{
+a \ar[r]^-{p} \ar[d]^-{x} & b \\
+a' \ar[r]_-{q} \ar@/^/[r]^-{p'} & b' }
+\]
+
+\begin{code}
+δ' : ∀ {i} {A : Type i} -> {n : ℕ}
+    -> (n-path {i} {A} (S (S n))) -> (n-path {i} {A} (S n))
+δ' {i} {_} {n} α = a' , ( a' , q ■ (inverse p') ) where
+   -- first, unpack α
+   a : n-path n
+   a = fst (fst α)
+   b : n-path n
+   b = fst (snd (fst α))
+   p : a == b
+   p = snd (snd (fst α))
+
+   a' : n-path n
+   a' = fst (fst (snd α))
+   b' : n-path n
+   b' = fst (snd (fst (snd α)))
+   q : a' == b'
+   q = snd (snd (fst (snd α)))
+
+   -- Apply first sigma equality
+   P : n-path n -> Type i
+   P p = Σ (n-path n) λ q -> p == q
+   t : Σ (a == a') λ x -> (transport P x (b , p)) == (b' , q)
+   t = Σ-path-trans (snd (snd α))
+   x : a == a'
+   x = fst t
+
+   -- Apply second (nested) sigma equality
+   P' : n-path n -> Type i
+   P' c = a' == c
+   y' : Σ (n-path n) λ c -> a' == c
+   y' = transport P x (b , p)
+   t' : y' == (b' , q)
+   t' = snd t
+   t'' : Σ ((fst y') == b') λ y -> (transport P' y (snd y')) == q
+   t'' = Σ-path-trans t'
+   y : fst y' == b'
+   y = fst t''
+   α' : (transport P' y (snd y')) == q
+   α' = snd t''
+   p' : a' == b'
+   p' = src α'
+
+\end{code}
+
+\end{proof}
+
 \end{document}

@@ -26,10 +26,6 @@ infix 3 _==_
 data _==_ {i} {A : Type i} (a : A) : A → Type i where
   refl : a == a
 
--- TODO: figure this out
---identity-paths-equal : ∀ i (A : Type i) (a : A) -> _==_ {i = i} {A = A} {a = a} refl refl
---identity-paths-equal i A a = refl
-
 Path = _==_
 
 {-# BUILTIN EQUALITY _==_ #-}
