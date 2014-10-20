@@ -270,3 +270,29 @@ module _ {i} {j} {A : Type i} {B : Type j} where
       f-g : (b : B) → f (g b) == b
       g-f : (a : A) → g (f a) == a
       adj : (a : A) → ap f (g-f a) == f-g (f a)
+
+{- Equivalences without record types -}
+{- Homotopy equivalence -}
+_~_ : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> (g : A -> B) -> Type i
+_~_ {_} {A} {_} f g = Π A λ x -> (f x) == (g x)
+
+id : ∀ {i} {A : Type i} -> (A -> A)
+id a = a
+
+_∘_ : ∀ {i} {A : Type i} {B : Type i} {C : Type i} -> (g : B -> C) -> (f : A -> B) -> (A -> C)
+_∘_ g f x = g (f x)
+
+{- Quasi inverse -}
+q-inv : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> Type i
+q-inv {_} {A} {B} f = Σ (B -> A) λ g -> (((f ∘ g) ~ id) × ((g ∘ f) ~ id))
+
+{- Equivalence -}
+is-equiv' : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> Type i
+is-equiv' {_} {A} {B} f = (Σ (B -> A) λ g -> ((f ∘ g) ~ id)) × (Σ (B -> A) λ h -> ((h ∘ f) ~ id))
+
+{- Every map with a quasi inverse is an equivalence -}
+q-inv-to-equiv : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> (q-inv f) -> (is-equiv' f)
+q-inv-to-equiv f q = (( g , h1 ) , (g , h2)) where
+  g = fst q
+  h1 = fst (snd q)
+  h2 = snd (snd q)
