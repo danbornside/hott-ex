@@ -6,6 +6,7 @@
 % use more unicode characters:
 
 \usepackage{amssymb}
+\usepackage{relsize}
 \usepackage{bbm}
 \usepackage[greek,english]{babel}
 \usepackage{textgreek}
@@ -359,8 +360,8 @@ It would certainly make sense to ask for a path of type $ p \ct y = x \ct q $.
 So, it seems that to define 2-paths, we need pairs of 1-paths together with
 vertical paths like $x$ and $y$ above. So we'll define it as a $\Sigma$-type:
 
-\[ \Sigma_{p,q : \mbox{1-paths}} \Sigma_{x : \mbox{src p } = \mbox{ src q}}
-   \Sigma_{ \mbox{dst p } = \mbox{ dst q}} p \ct y = x \ct q \]
+\[ \sum_{p,q} \sum_{x : src (p) = src (q)}
+   \sum_{ y : dst (p) = dst (q) } p \ct y = x \ct q  \]
 
 We will write down some helper functions and then formalize this:
 
@@ -414,10 +415,10 @@ all the lower dimensional equalities to make this work!
 
 n-path : ∀ {i} {A : Type i} -> ℕ -> Type i
 n-path {i} {A} 0 = A
-n-path {i} {A} (S n) = Σ (n-path {i} {A} n) λ p -> Σ (n-path {i} {A} n) λ q -> p == q
+n-path {i} {A} (S n) = Σ (n-path {i} {A} n) λ p -> Σ (n-path n) λ q -> p == q
 
 δ : ∀ {i} {A : Type i} -> (n : ℕ) ->
-  (n-path {i} {A} (S n)) -> (n-path {i} {A} n) × (n-path {i} {A} n)
+  (n-path {i} {A} (S n)) -> (n-path n) × (n-path n)
 δ n p = fst p , fst (snd p)
 
 \end{code}
