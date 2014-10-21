@@ -454,7 +454,7 @@ a' \ar[r]_-{q} \ar@/^/[r]^-{p'} & b' }
 
 \begin{code}
 δ' : ∀ {i} {A : Type i} -> {n : ℕ}
-    -> (n-path {i} {A} (S (S n))) -> (n-path {i} {A} (S n))
+    -> (n-path {i} {A} (S (S n))) -> (n-path (S n))
 δ' {i} {_} {n} α = a' , ( a' , q ■ (inverse p') ) where
    -- first, unpack α
    a : n-path n
