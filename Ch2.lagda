@@ -498,4 +498,116 @@ a' \ar[r]_-{q} \ar@/^/[r]^-{p'} & b' }
 
 \end{proof}
 
+\section{}
+
+\section{}
+
+\begin{lemma}
+Let $p: x = y$ in $A$. Then for all $z : A$, the function
+$p \ct - : (y = z) \rightarrow (x = z)$ is an equivalence.
+
+\end{lemma}
+
+\begin{proof}
+
+An obvious candidate for a quasi-inverse would be a map that
+concatinates with inverse($p$).
+
+We need to use the groupoid laws for $\ct$, as well as whiskering over
+higher paths.
+
+Here are some groupoid laws:
+
+\begin{code}
+
+■-inv-l : ∀ {i} {A : Type i} {a b : A} -> (p : a == b) -> ((inverse p) ■ p) == refl
+■-inv-l {i} {A} {a} {b} = ind== D d where
+  D : (a b : A) -> (p : a == b) → Type i
+  D _ _ p = ((inverse p) ■ p) == refl
+  d : (x : A) → D x x refl
+  d _ = refl
+
+■-inv-r : ∀ {i} {A : Type i} {a b : A} -> (p : a == b) ->  p ■ (inverse p) == refl
+■-inv-r {i} {A} {a} {b} = ind== D d where
+  D : (a b : A) -> (p : a == b) → Type i
+  D _ _ p = p ■ (inverse p) == refl
+  d : (x : A) → D x x refl
+  d _ = refl
+
+■-func : ∀ {i} {A : Type i} {a : A} {b : A} {c : A} -> (p : a == b) -> (b == c) -> (a == c)
+■-func p q = p ■ q
+
+■-id-l : ∀ {i} {A : Type i} {a b : A} -> (p : a == b) -> refl ■ p == p
+■-id-l {i} {A} {_} {_} = ind== D d where
+  D : (a b : A) -> (p : a == b) → Type i
+  D _ _ p = (refl ■ p) == p
+  d : (x : A) → D x x refl
+  d _ = refl
+
+■-id-r : ∀ {i} {A : Type i} {a b : A} -> (p : a == b) -> p ■ refl == p
+■-id-r {i} {A} {_} {_} = ind== D d where
+  D : (a b : A) -> (p : a == b) → Type i
+  D _ _ p = p ■ refl == p
+  d : (x : A) → D x x refl
+  d _ = refl
+
+■-assoc : ∀ {i} {A : Type i} {w x y z : A}
+  -> (p : w == x) -> (q : x == y) -> (r : y == z)
+    -> p ■ (q ■ r) == (p ■ q) ■ r
+■-assoc {i} {A} {_} {_} {y} {z} = ind== D d where
+  D : (w x : A) -> (p : w == x) -> Type i
+  D _ x p = (q : x == y) -> (r : y == z) -> p ■ (q ■ r) == (p ■ q) ■ r
+  d : (x : A) -> D x x refl
+  d _ = ind== E e where
+    E : (x y : A) -> (q : x == y) -> Type i
+    E _ y q = (r : y == z) -> refl ■ (q ■ r) == (refl ■ q) ■ r
+    e : (x : A) -> E x x refl
+    e _ = ind== F f where
+      F : (y z : A) -> (r : y == z) -> Type i
+      F _ z r = refl ■ (refl ■ r) == (refl ■ refl) ■ r
+      f : (x : A) -> F x x refl
+      f _ = refl
+
+\end{code}
+
+And whiskering for $2$-paths (really, $n + 2$ paths...)
+
+\begin{code}
+whisk-r : ∀ {i} {A : Type i} {x y z : A} {p p' : x == y} {q : y == z}
+  -> (p == p') -> ((p ■ q) == (p' ■ q))
+whisk-r {i} {_} {x} {y} {z} {_} {_} {q} = ind== D d where
+  D : (p p' : x == y) -> (α : p == p') -> Type i
+  D p p' α =  ((p ■ q) == (p' ■ q))
+  d : (p : x == y) -> D p p refl
+  d _ = refl
+
+whisk-l : ∀ {i} {A : Type i} {x y z : A} {p : x == y} {q q' : y == z}
+  -> (q == q') -> ((p ■ q) == (p ■ q'))
+whisk-l {i} {_} {x} {y} {z} {p} {_} {_} = ind== D d where
+  D : (q q' : y == z) -> (β : q == q') -> Type i
+  D q q' β =  ((p ■ q) == (p ■ q'))
+  d : (q : y == z) -> D q q refl
+  d _ = refl
+
+\end{code}
+
+We now define the quasi inverse to $p \ct -$ as $p^{-1} \ct -$. To do this,
+we need homotopies from $(p \ct -) \circ (p^{-1} \ct -) \sim id$ and $(p^{-1} \ct -)
+\circ (p \ct -) \sim id$. By definition,
+$(p \ct -) \circ (p^{-1} \ct -) \equiv (p ■ p^{-1} ■ -)$,
+so we really just need a 2-path $p ■ p^{-1} = \refl{}$ (and a 2-path for
+the symmetric case). This follows from the groupoid laws above:
+
+\begin{code}
+
+■-qinv : ∀ {i} {A : Type i} {x y z : A}
+  -> (p : x == y) -> (q-inv (_■_ {i} {A} {x} {y} {z} p))
+■-qinv p = _■_ (inverse p) ,
+  ( (λ q -> ((■-assoc p (inverse p) q) ■ whisk-r (■-inv-r p)) ■ (■-id-l q))
+     , (λ q →  ((■-assoc (inverse p) p q) ■ whisk-r (■-inv-l p)) ■  (■-id-l q)))
+
+\end{code}
+
+\end{proof}
+
 \end{document}
