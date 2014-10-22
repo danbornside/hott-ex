@@ -592,11 +592,11 @@ whisk-l {i} {_} {x} {y} {z} {p} {_} {_} = ind== D d where
 
 \end{code}
 
-We now define the quasi inverse to $p \ct -$ as $p^{-1} \ct -$. To do this,
-we need homotopies from $(p \ct -) \circ (p^{-1} \ct -) \sim id$ and $(p^{-1} \ct -)
+We now define the quasi inverse to $p \ct -$ as $p^{ -1} \ct -$. To do this,
+we need homotopies from $(p \ct -) \circ (p^{ -1} \ct -) \sim id$ and $(p^{ -1} \ct -)
 \circ (p \ct -) \sim id$. By definition,
-$(p \ct -) \circ (p^{-1} \ct -) \equiv (p ■ p^{-1} ■ -)$,
-so we really just need a 2-path $p ■ p^{-1} = \refl{}$ (and a 2-path for
+$(p \ct -) \circ (p^{ -1} \ct -) \equiv (p ■ p^{ -1} ■ -)$,
+so we really just need a 2-path $p ■ p^ 1 = \refl{}$ (and a 2-path for
 the symmetric case). This follows from the groupoid laws above:
 
 \begin{code}
@@ -609,6 +609,99 @@ the symmetric case). This follows from the groupoid laws above:
 
 \end{code}
 
+Now, we simply observe that every quasi-inverse is an equivalence.
+
+\begin{code}
+
+■-equiv : ∀ {i} {A : Type i} {x y z : A}
+  -> (p : x == y) -> (is-equiv'  (_■_ {i} {A} {x} {y} {z} p))
+■-equiv p = q-inv-to-equiv (_■_ p) (■-qinv p)
+
+\end{code}
+
 \end{proof}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+Oh boy! Homotopy pushouts!
+
+First, let's define a homotopy commutative diagram. We will stick to
+the notation used in the book.
+
+The following $\Sigma$-type is the type of all pullback squares
+given types $P, A, B, C$.
+
+\[
+\xymatrix{
+P \ar[r]^-{h} \ar[d]^-{k} & A \ar[d]^-{f} \\
+B \ar[r]^-{g} & C } \]
+
+\begin{code}
+com-sq : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
+  -> (P : Type i) -> Type i
+com-sq {_} {A} {B} {_} f g P =
+  Σ (P -> A) λ h -> Σ (P -> B) λ k -> (f ∘ h) == (g ∘ k)
+\end{code}
+
+A pullback square is a commutative square together with a certain
+equivalence. The book defines this in terms of a ``canonical pullback''
+that is defined in terms of composition. This is analogous to defining
+pullbacks in a category $\mathcal{C}$ in terms of presheaves over $\mathcal{C}$.
+A diagram is a pullback square if the upper left corner represents a
+functor that is equivalent to the pullback of the diagram.
+
+\begin{code}
+
+open import FunExt
+
+∘-functor : ∀ {i} {A B C : Type i} -> (f : A -> B) -> (g : B -> C) -> (g' : B -> C)
+  -> (g == g') -> (g ∘ f) == (g' ∘ f)
+∘-functor f g g' α = is-equiv.g γ β' where
+  -- The actual homotopy between g and g'
+  α' = happly g g' α
+  -- A homotopy from (g ∘ f) ~ (g' ∘ f)
+  β' = λ a -> α' (f a)
+  -- We need to get back to paths (g ∘ f) == (g' ∘ f), so we need
+  -- function extensionality
+  γ = fun-ext (g ∘ f) (g' ∘ f)
+
+p-map : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
+  -> (P : Type i) -> (X : Type i) -> (com-sq f g P)
+    -> (X -> P) -> (com-sq f g X)
+p-map f g P X sq l = h ∘ l , (k ∘ l , ∘-functor l (f ∘ h) (g ∘ k) α ) where
+    h = fst sq
+    k = fst (snd sq)
+    α = snd (snd sq)
+
+open import Agda.Primitive using (lsuc)
+
+is-pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C) -> (P : Type i)
+  -> (com-sq f g P) -> Type (lsuc i)
+is-pullback {i} f g P α = Π (Type i) λ X -> is-equiv (p-map f g P X α)
+
+pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C) -> Type i
+pullback {i} {A} {B} f g = Σ A λ a -> Σ B λ b -> (f a) == (g b)
+
+pullback-sq : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
+  -> (com-sq f g (pullback f g))
+-- use function extensionality
+pullback-sq = {!!}
+
+pullback-is-pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
+  -> (is-pullback f g (pullback f g) (pullback-sq f g))
+-- probably more function extensionality
+pullback-is-pullback = {!!}
+
+\end{code}
+
+\section{}
 
 \end{document}
