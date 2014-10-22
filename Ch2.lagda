@@ -687,18 +687,49 @@ is-pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C) -> (P : T
   -> (com-sq f g P) -> Type (lsuc i)
 is-pullback {i} f g P α = Π (Type i) λ X -> is-equiv (p-map f g P X α)
 
+-- pullback type of f, g
 pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C) -> Type i
 pullback {i} {A} {B} f g = Σ A λ a -> Σ B λ b -> (f a) == (g b)
 
+-- pullback type together with projection maps
 pullback-sq : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (com-sq f g (pullback f g))
--- use function extensionality
-pullback-sq = {!!}
+-- construct a homotopy and use function extensionality
+pullback-sq {_} {A} {B} f g = h , (k , (is-equiv.g f-ext) α) where
+  P = pullback f g
+  h : P -> A
+  h = fst
+  k : P -> B
+  k p = fst (snd p)
+  α : Π P λ p -> (f (h p)) == (g (k p))
+  α = λ p → snd (snd p)
+  f-ext = fun-ext (f ∘ h) (g ∘ k)
 
 pullback-is-pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (is-pullback f g (pullback f g) (pullback-sq f g))
 -- probably more function extensionality
-pullback-is-pullback = {!!}
+pullback-is-pullback {_} {A} {B} f g X = record { g = factor ; f-g = pmap-factor ; g-f = {!!} ; adj = {!!} } where
+   P = pullback f g
+   P-sq = pullback-sq f g
+   h = fst P-sq
+   k = fst (snd P-sq)
+   α = snd (snd P-sq)
+
+   -- We need to factor maps from X to f,g through P
+   factor : (com-sq f g X) -> (X -> P)
+   factor (h' , (k' , α')) x = h' x , (k' x , (happly (f ∘ h') (g ∘ k') α') x)
+
+   -- Now we need the components of the ``adjunction''
+   -- For this, we will need the theorem that characterizes paths in Σ-types
+   pmap-factor : (sq : (com-sq f g X)) -> (p-map f g P X P-sq (factor sq) == sq)
+   pmap-factor sq = {!!}
+
+   factor-pmap : (l : X -> P) -> factor (p-map f g P X P-sq l) == l
+   factor-pmap l = {!!} where
+     ψ = p-map f g P X P-sq l
+     l' = factor ψ
+
+
 
 \end{code}
 
