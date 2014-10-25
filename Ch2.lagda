@@ -428,16 +428,36 @@ facts about equalities of sigma types.
 
 \begin{code}
 
-Σ-path-trans : ∀ {i} {A : Type i} {P : A -> Type i}
+Σ== : ∀ {i} {A : Type i} {P : A -> Type i}
   -> {w : Σ A P} -> {w' : Σ A P} -> w == w'
     -> (Σ ((fst w) == (fst w')) λ p
       -> (transport {i} {i} {A} P p (snd w)) == (snd w'))
-Σ-path-trans {i} {A} {P} = ind== D d where
+Σ== {i} {A} {P} = ind== D d where
   D : (w : Σ A P) -> (w' : Σ A P) -> w == w' → Type i
   D w w' _ = (Σ ((fst w) == (fst w')) λ p
              -> (transport {i} {i} {A} P p (snd w)) == (snd w'))
   d : (w : Σ A P) → D w w refl
   d _ = refl , refl
+
+Σ==-inv : ∀ {i} {A : Type i} {P : A -> Type i}
+  -> {w : Σ A P} -> {w' : Σ A P}
+    -> (Σ ((fst w) == (fst w')) λ p
+      -> (transport {i} {i} {A} P p (snd w)) == (snd w'))
+        -> w == w'
+Σ==-inv {i} {A} {P} {w} {w'} α = p-ind (snd w) (snd w') q where
+  p = fst α
+  q = snd α
+  p-ind = ind== D d p where
+    D : (w₁ w'₁ : A) -> (p : w₁ == w'₁) -> Type i
+    D w₁ w'₁ p = Π (P w₁) λ w₂ -> Π (P w'₁) λ w'₂
+                 -> (q : (transport P p w₂) == w'₂) -> (w₁ , w₂) == (w'₁ , w'₂)
+    d : (x : A) -> D x x refl
+    d x x₁ x₂ q = ind== E e q where
+      E : (w₂ w₂' : (P x)) -> (q : (transport P refl w₂) == w₂') -> Type i
+      E w₂ w₂' q = (x , w₂) == (x , w₂')
+      e : (y : (P x)) -> E y y refl
+      e _ = refl
+
 \end{code}
 
 \begin{lemma}
@@ -475,7 +495,7 @@ a' \ar[r]_-{q} \ar@/^/[r]^-{p'} & b' }
    P : n-path n -> Type i
    P p = Σ (n-path n) λ q -> p == q
    t : Σ (a == a') λ x -> (transport P x (b , p)) == (b' , q)
-   t = Σ-path-trans (snd (snd α))
+   t = Σ== (snd (snd α))
    x : a == a'
    x = fst t
 
@@ -487,7 +507,7 @@ a' \ar[r]_-{q} \ar@/^/[r]^-{p'} & b' }
    t' : y' == (b' , q)
    t' = snd t
    t'' : Σ ((fst y') == b') λ y -> (transport P' y (snd y')) == q
-   t'' = Σ-path-trans t'
+   t'' = Σ== t'
    y : fst y' == b'
    y = fst t''
    α' : (transport P' y (snd y')) == q
@@ -631,7 +651,7 @@ Now, we simply observe that every quasi-inverse is an equivalence.
 
 \section{}
 
-Oh boy! Homotopy pushouts!
+Oh boy! Homotopy pullbacks!
 
 First, let's define a homotopy commutative diagram. We will stick to
 the notation used in the book.
@@ -664,14 +684,15 @@ open import FunExt
 
 ∘-functor : ∀ {i} {A B C : Type i} -> (f : A -> B) -> (g : B -> C) -> (g' : B -> C)
   -> (g == g') -> (g ∘ f) == (g' ∘ f)
-∘-functor f g g' α = is-equiv.g γ β' where
+∘-functor f g g' α = happly-inv (g ∘ f) (g' ∘ f) β' where
   -- The actual homotopy between g and g'
   α' = happly g g' α
   -- A homotopy from (g ∘ f) ~ (g' ∘ f)
   β' = λ a -> α' (f a)
-  -- We need to get back to paths (g ∘ f) == (g' ∘ f), so we need
-  -- function extensionality
-  γ = fun-ext (g ∘ f) (g' ∘ f)
+
+∘-functor-comm : ∀ {i} {A B C : Type i} -> (f : A -> B) -> (g : B -> C) -> (g' : B -> C)
+  -> (β : (g == g')) -> happly (g ∘ f) (g' ∘ f) (∘-functor f g g' β) == λ a -> ((happly g g' β) (f a))
+∘-functor-comm f g g' β = h-h-inv (g ∘ f) (g' ∘ f) (λ a → happly g g' β (f a))
 
 p-map : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (P : Type i) -> (X : Type i) -> (com-sq f g P)
@@ -695,7 +716,7 @@ pullback {i} {A} {B} f g = Σ A λ a -> Σ B λ b -> (f a) == (g b)
 pullback-sq : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (com-sq f g (pullback f g))
 -- construct a homotopy and use function extensionality
-pullback-sq {_} {A} {B} f g = h , (k , (is-equiv.g f-ext) α) where
+pullback-sq {_} {A} {B} f g = h , (k , (happly-inv  (f ∘ h) (g ∘ k) α )) where
   P = pullback f g
   h : P -> A
   h = fst
@@ -703,33 +724,56 @@ pullback-sq {_} {A} {B} f g = h , (k , (is-equiv.g f-ext) α) where
   k p = fst (snd p)
   α : Π P λ p -> (f (h p)) == (g (k p))
   α = λ p → snd (snd p)
-  f-ext = fun-ext (f ∘ h) (g ∘ k)
+
+-- We need to factor maps from X to f,g through P
+factor : ∀ {i} {A B C : Type i} {f : A -> C} {g : B -> C} {X : Type i}
+  -> (com-sq f g X) -> (X -> (pullback f g))
+factor {_} {_} {_} {_} {f} {g} {_} (h' , (k' , α')) x = h' x , (k' x , (happly (f ∘ h') (g ∘ k') α') x)
+
 
 pullback-is-pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (is-pullback f g (pullback f g) (pullback-sq f g))
 -- probably more function extensionality
-pullback-is-pullback {_} {A} {B} f g X = record { g = factor ; f-g = pmap-factor ; g-f = {!!} ; adj = {!!} } where
+pullback-is-pullback {_} {A} {B} f g X = record { g = factor ; f-g = pmap-factor ; g-f = factor-pmap ; adj = {!!} } where
    P = pullback f g
    P-sq = pullback-sq f g
    h = fst P-sq
    k = fst (snd P-sq)
    α = snd (snd P-sq)
-
-   -- We need to factor maps from X to f,g through P
-   factor : (com-sq f g X) -> (X -> P)
-   factor (h' , (k' , α')) x = h' x , (k' x , (happly (f ∘ h') (g ∘ k') α') x)
+   α' : Π P λ p -> (f (h p)) == (g (k p))
+   α' = λ p → snd (snd p)
 
    -- Now we need the components of the ``adjunction''
    -- For this, we will need the theorem that characterizes paths in Σ-types
    pmap-factor : (sq : (com-sq f g X)) -> (p-map f g P X P-sq (factor sq) == sq)
-   pmap-factor sq = {!!}
+   pmap-factor sq = β where
+     l' = factor sq
+     sq' = p-map f g P X P-sq l'
+     β : sq' == sq
+     β = Σ==-inv (refl , (Σ==-inv (refl , {!!})))
 
    factor-pmap : (l : X -> P) -> factor (p-map f g P X P-sq l) == l
-   factor-pmap l = {!!} where
-     ψ = p-map f g P X P-sq l
-     l' = factor ψ
-
-
+   factor-pmap l = happly-inv l' l β where
+     l' = factor (p-map f g P X P-sq l)
+     γ' : Π X λ x -> (f (h (l x))) == (g (k (l x)))
+     γ' x = snd (snd (l' x))
+     γ : Π X λ x -> (f (h (l x))) == (g (k (l x)))
+     γ x = snd (snd (l x))
+     -- We need that for all x, γ' x == γ'' x
+     -- This seems obvious by construction, but the construction
+     -- of l' involved a happly and happly-inv, as well as
+     -- composing with l. So we need to unwrap all that.
+     ψ : γ' == λ x -> (happly (f ∘ h) (g ∘ k) α) (l x)
+     ψ = ∘-functor-comm l (f ∘ h) (g ∘ k) α
+     ψ' : (x : X) -> γ' x == (happly (f ∘ h) (g ∘ k) α) (l x)
+     ψ' x = (happly γ' (λ x -> (happly (f ∘ h) (g ∘ k) α) (l x)) ψ) x
+     φ : (λ p -> (happly (f ∘ h) (g ∘ k) α) p) == λ p -> (snd (snd p))
+     φ = h-h-inv (f ∘ h) (g ∘ k) (λ p -> snd (snd p))
+     φ' : (x : X) -> ((happly (f ∘ h) (g ∘ k) α) (l x)) == (snd (snd (l x)))
+     φ' x = (happly (λ p → happly (f ∘ h) (g ∘ k) α p) (λ p → snd (snd p)) φ)
+                 (l x)
+     β : Π X λ x -> l' x == l x
+     β = λ x → Σ==-inv ( refl , (Σ==-inv ( refl , ψ' x ■ φ' x )))
 
 \end{code}
 
