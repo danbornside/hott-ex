@@ -594,9 +594,9 @@ Here are some groupoid laws:
 And whiskering for $2$-paths (really, $n + 2$ paths...)
 
 \begin{code}
-whisk-r : ∀ {i} {A : Type i} {x y z : A} {p p' : x == y} {q : y == z}
+whisk-r : ∀ {i} {A : Type i} {x y z : A} {p p' : x == y} -> (q : y == z)
   -> (p == p') -> ((p ■ q) == (p' ■ q))
-whisk-r {i} {_} {x} {y} {z} {_} {_} {q} = ind== D d where
+whisk-r {i} {_} {x} {y} {z} {_} {_} q = ind== D d where
   D : (p p' : x == y) -> (α : p == p') -> Type i
   D p p' α =  ((p ■ q) == (p' ■ q))
   d : (p : x == y) -> D p p refl
@@ -624,8 +624,8 @@ the symmetric case). This follows from the groupoid laws above:
 ■-qinv : ∀ {i} {A : Type i} {x y z : A}
   -> (p : x == y) -> (q-inv (_■_ {i} {A} {x} {y} {z} p))
 ■-qinv p = _■_ (inverse p) ,
-  ( (λ q -> ((■-assoc p (inverse p) q) ■ whisk-r (■-inv-r p)) ■ (■-id-l q))
-     , (λ q →  ((■-assoc (inverse p) p q) ■ whisk-r (■-inv-l p)) ■  (■-id-l q)))
+  ( (λ q -> ((■-assoc p (inverse p) q) ■ whisk-r q (■-inv-r p)) ■ (■-id-l q))
+     , (λ q →  ((■-assoc (inverse p) p q) ■ whisk-r q (■-inv-l p)) ■  (■-id-l q)))
 
 \end{code}
 
@@ -635,7 +635,7 @@ Now, we simply observe that every quasi-inverse is an equivalence.
 
 ■-equiv : ∀ {i} {A : Type i} {x y z : A}
   -> (p : x == y) -> (is-equiv'  (_■_ {i} {A} {x} {y} {z} p))
-■-equiv p = q-inv-to-equiv (_■_ p) (■-qinv p)
+■-equiv p = q-inv-to-equiv' (_■_ p) (■-qinv p)
 
 \end{code}
 
@@ -682,22 +682,47 @@ functor that is equivalent to the pullback of the diagram.
 
 open import FunExt
 
+precomp : ∀ {i} {A B C : Type i} -> (A -> B) -> (B -> C) -> (A -> C)
+precomp f g = g ∘ f
+
+precomp-happly : ∀ {i} {A B X : Type i} -> (f : X -> A) -> (g g' : A -> B)
+    -> (α : (g == g'))
+      -> (x : X) -> (happly (g ∘ f) (g' ∘ f) (ap (precomp f) α) x) == (happly g g' α) (f x)
+precomp-happly {i} {A} {B} {X} f g g' α = ind== D d α where
+  D : (g g' : A -> B) -> (g == g') -> Type i
+  D g g' α = (x : X) -> (happly (g ∘ f) (g' ∘ f) (ap (precomp f) α) x) == (happly g g' α) (f x)
+  d : (g : A -> B) -> D g g refl
+  d g x = refl
+
+homotopy-square : ∀ {i} {A B : Type i} -> (f g : A -> B) -> (H : f ~ g)
+  -> (x y : A) -> (p : x == y) -> ((H x) ■ (ap g p)) == ((ap f p) ■ (H y))
+homotopy-square {i} {A} {B} f g H x y = ind== D d where
+  D : (x y : A) -> (p : x == y) -> Type i
+  D x y p = ((H x) ■ (ap g p)) == ((ap f p) ■ (H y))
+  d : (x : A) -> D x x refl
+  d x = ■-id-r (H x)
+
+q-inv-to-equiv : ∀ {i} {A B : Type i} -> (f : A -> B) -> (q-inv f) -> (is-equiv f)
+q-inv-to-equiv {i} {A} {B} f (g , (ε , η)) = record { g = g ; ε = ε' ; η = η ; τ = τ } where
+  ε' : (b : B) -> f (g b) == b
+  ε' b = (inverse (ε (f (g b))) ) ■ (ap f (η (g b)) ■ ε b)
+  τ : (a : A) -> ap f (η a) == ε' (f a)
+  τ a = {! ?!}
+
 ∘-functor : ∀ {i} {A B C : Type i} -> (f : A -> B) -> (g : B -> C) -> (g' : B -> C)
   -> (g == g') -> (g ∘ f) == (g' ∘ f)
-∘-functor f g g' α = happly-inv (g ∘ f) (g' ∘ f) β' where
-  -- The actual homotopy between g and g'
-  α' = happly g g' α
-  -- A homotopy from (g ∘ f) ~ (g' ∘ f)
-  β' = λ a -> α' (f a)
+∘-functor f g g' = ap (precomp f)
 
-∘-functor-comm : ∀ {i} {A B C : Type i} -> (f : A -> B) -> (g : B -> C) -> (g' : B -> C)
-  -> (β : (g == g')) -> happly (g ∘ f) (g' ∘ f) (∘-functor f g g' β) == λ a -> ((happly g g' β) (f a))
-∘-functor-comm f g g' β = h-h-inv (g ∘ f) (g' ∘ f) (λ a → happly g g' β (f a))
+happly-path : ∀ {i} {A B : Type i} -> (f g : A -> B) -> (α : f == g) -> (β : f == g)
+    -> (happly f g α) == (happly f g β) -> α == β
+happly-path f g α β ψ = (inverse (h-inv-h f g α)) ■ (ψ' ■ h-inv-h f g β)  where
+    ψ' : (funext f g (happly f g α)) == (funext f g (happly f g β))
+    ψ' = (ap (funext f g)) ψ
 
 p-map : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (P : Type i) -> (X : Type i) -> (com-sq f g P)
     -> (X -> P) -> (com-sq f g X)
-p-map f g P X sq l = h ∘ l , (k ∘ l , ∘-functor l (f ∘ h) (g ∘ k) α ) where
+p-map f g P X sq l = h ∘ l , (k ∘ l , ap (precomp l) α ) where
     h = fst sq
     k = fst (snd sq)
     α = snd (snd sq)
@@ -716,7 +741,7 @@ pullback {i} {A} {B} f g = Σ A λ a -> Σ B λ b -> (f a) == (g b)
 pullback-sq : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (com-sq f g (pullback f g))
 -- construct a homotopy and use function extensionality
-pullback-sq {_} {A} {B} f g = h , (k , (happly-inv  (f ∘ h) (g ∘ k) α )) where
+pullback-sq {_} {A} {B} f g = h , (k , (funext  (f ∘ h) (g ∘ k) α )) where
   P = pullback f g
   h : P -> A
   h = fst
@@ -733,8 +758,7 @@ factor {_} {_} {_} {_} {f} {g} {_} (h' , (k' , α')) x = h' x , (k' x , (happly 
 
 pullback-is-pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (is-pullback f g (pullback f g) (pullback-sq f g))
--- probably more function extensionality
-pullback-is-pullback {_} {A} {B} f g X = record { g = factor ; f-g = pmap-factor ; g-f = factor-pmap ; adj = {!!} } where
+pullback-is-pullback {_} {A} {B} f g X = (q-inv-to-equiv (p-map f g P X P-sq) p-map-q-inv) where
    P = pullback f g
    P-sq = pullback-sq f g
    h = fst P-sq
@@ -743,37 +767,51 @@ pullback-is-pullback {_} {A} {B} f g X = record { g = factor ; f-g = pmap-factor
    α' : Π P λ p -> (f (h p)) == (g (k p))
    α' = λ p → snd (snd p)
 
-   -- Now we need the components of the ``adjunction''
-   -- For this, we will need the theorem that characterizes paths in Σ-types
-   pmap-factor : (sq : (com-sq f g X)) -> (p-map f g P X P-sq (factor sq) == sq)
-   pmap-factor sq = β where
-     l' = factor sq
-     sq' = p-map f g P X P-sq l'
-     β : sq' == sq
-     β = Σ==-inv (refl , (Σ==-inv (refl , {!!})))
+   p-map-q-inv : q-inv (p-map f g (pullback f g) X (pullback-sq f g))
+   p-map-q-inv = factor , (ε , η) where
+     -- components of the quasi-inverse
+     ε : (sq : (com-sq f g X)) -> (p-map f g P X P-sq (factor sq) == sq)
+     ε sq = Σ==-inv (refl , (Σ==-inv (refl ,
+                (happly-path (f ∘ h') (g ∘ k') (snd (snd sq')) (snd (snd sq)) β ) ))) where
+       l : X -> P
+       l = factor sq
+       h' = fst sq
+       k' = fst (snd sq)
+       sq' = p-map f g P X P-sq l
 
-   factor-pmap : (l : X -> P) -> factor (p-map f g P X P-sq l) == l
-   factor-pmap l = happly-inv l' l β where
-     l' = factor (p-map f g P X P-sq l)
-     γ' : Π X λ x -> (f (h (l x))) == (g (k (l x)))
-     γ' x = snd (snd (l' x))
-     γ : Π X λ x -> (f (h (l x))) == (g (k (l x)))
-     γ x = snd (snd (l x))
-     -- We need that for all x, γ' x == γ'' x
-     -- This seems obvious by construction, but the construction
-     -- of l' involved a happly and happly-inv, as well as
-     -- composing with l. So we need to unwrap all that.
-     ψ : γ' == λ x -> (happly (f ∘ h) (g ∘ k) α) (l x)
-     ψ = ∘-functor-comm l (f ∘ h) (g ∘ k) α
-     ψ' : (x : X) -> γ' x == (happly (f ∘ h) (g ∘ k) α) (l x)
-     ψ' x = (happly γ' (λ x -> (happly (f ∘ h) (g ∘ k) α) (l x)) ψ) x
-     φ : (λ p -> (happly (f ∘ h) (g ∘ k) α) p) == λ p -> (snd (snd p))
-     φ = h-h-inv (f ∘ h) (g ∘ k) (λ p -> snd (snd p))
-     φ' : (x : X) -> ((happly (f ∘ h) (g ∘ k) α) (l x)) == (snd (snd (l x)))
-     φ' x = (happly (λ p → happly (f ∘ h) (g ∘ k) α p) (λ p → snd (snd p)) φ)
-                 (l x)
-     β : Π X λ x -> l' x == l x
-     β = λ x → Σ==-inv ( refl , (Σ==-inv ( refl , ψ' x ■ φ' x )))
+       ψ : (x : X) -> ((happly (f ∘ h') (g ∘ k') (snd (snd sq'))) x == (happly (f ∘ h) (g ∘ k) α) (l x))
+       ψ = precomp-happly l (f ∘ h) (g ∘ k) α
+
+       φ : (x : X) -> ((happly (f ∘ h) (g ∘ k) α) (l x)) == α' (l x)
+       φ x = (happly (happly (f ∘ h) (g ∘ k) α) α' (h-h-inv (f ∘ h) (g ∘ k) α')) (l x)
+
+       β : (happly (f ∘ h') (g ∘ k') (snd (snd sq'))) == (happly (f ∘ h') (g ∘ k') (snd (snd sq)))
+       β = funext
+           (happly (f ∘ h') (g ∘ k') (snd (snd sq')))
+           (happly (f ∘ h') (g ∘ k') (snd (snd sq)))
+           λ x -> ψ x ■ φ x
+
+     η : (l : X -> P) -> factor (p-map f g P X P-sq l) == l
+     η l = funext l' l β where
+       l' = factor (p-map f g P X P-sq l)
+       γ' : Π X λ x -> (f (h (l x))) == (g (k (l x)))
+       γ' x = snd (snd (l' x))
+       γ : Π X λ x -> (f (h (l x))) == (g (k (l x)))
+       γ x = snd (snd (l x))
+       -- We need that for all x, γ' x == γ'' x
+       -- This seems obvious by construction, but the construction
+       -- of l' involved a happly and funext, as well as
+       -- composing with l. So we need to unwrap all that.
+       ψ : (x : X) -> (γ' x == (happly (f ∘ h) (g ∘ k) α) (l x))
+       ψ = precomp-happly l (f ∘ h) (g ∘ k) α
+
+       φ : (x : X) -> (happly (f ∘ h) (g ∘ k) α) (l x) == γ x
+       φ x = (happly (happly (f ∘ h) (g ∘ k) α)
+                   (λ p → snd (snd p))
+                     (h-h-inv (f ∘ h) (g ∘ k) (λ p -> (snd (snd p))))) (l x)
+
+       β : Π X λ x -> l' x == l x
+       β = λ x → Σ==-inv ( refl , (Σ==-inv ( refl , ψ x ■ φ x )))
 
 \end{code}
 

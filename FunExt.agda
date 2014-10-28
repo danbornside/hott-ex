@@ -15,15 +15,15 @@ module _ {i j} {A : Type i} {B : A → Type j} where
     d f = λ x → refl
 
   postulate
-    fun-ext : (f g : (x : A) → B x) → is-equiv (happly f g)
+    happly-equiv : (f g : (x : A) → B x) → is-equiv (happly f g)
 
-  happly-inv : (f g : (x : A) → B x) → ((x : A) → f x == g x) -> (f == g)
-  happly-inv f g = is-equiv.g (fun-ext f g)
+  funext : (f g : (x : A) → B x) → ((x : A) → f x == g x) -> (f == g)
+  funext f g = is-equiv.g (happly-equiv f g)
 
   h-h-inv : (f g : (x : A) → B x) -> ( α : ((x : A) → f x == g x))
-    -> (happly f g (happly-inv f g α)) == α
-  h-h-inv f g α = (is-equiv.f-g (fun-ext f g)) α
+    -> (happly f g (funext f g α)) == α
+  h-h-inv f g α = (is-equiv.ε (happly-equiv f g)) α
 
   h-inv-h : (f g : (x : A) → B x) -> (α : f == g)
-    -> (happly-inv f g (happly f g α)) == α
-  h-inv-h f g α = (is-equiv.g-f (fun-ext f g)) α
+    -> (funext f g (happly f g α)) == α
+  h-inv-h f g α = (is-equiv.η (happly-equiv f g)) α

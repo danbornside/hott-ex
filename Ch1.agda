@@ -279,7 +279,7 @@ module Ex1-6 {i} {A B : Type i} where
 
   uppt-x : (ab : (A x B)) → (fst-x ab ,, snd-x ab) == ab
   uppt-x ab = is-equiv.g fe h where -- (fst-x ab ,, snd-x ab) x == ab x
-    fe = fun-ext ((fst-x ab ,, snd-x ab)) ab
+    fe = happly-equiv ((fst-x ab ,, snd-x ab)) ab
     h : (c : Bool) → (fst-x ab ,, snd-x ab) c == ab c
     h true = refl
     h false = refl

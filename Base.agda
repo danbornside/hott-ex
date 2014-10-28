@@ -261,18 +261,7 @@ data Bool : Type₀ where
 
 {- Equivalences -}
 
-module _ {i} {j} {A : Type i} {B : Type j} where
 
-  record is-equiv (f : A → B) : Type (i ⊔ j)
-    where
-    field
-      g : B → A
-      f-g : (b : B) → f (g b) == b
-      g-f : (a : A) → g (f a) == a
-      adj : (a : A) → ap f (g-f a) == f-g (f a)
-
-{- Equivalences without record types -}
-{- Homotopy equivalence -}
 _~_ : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> (g : A -> B) -> Type i
 _~_ {_} {A} {_} f g = Π A λ x -> (f x) == (g x)
 
@@ -281,6 +270,20 @@ id a = a
 
 _∘_ : ∀ {i} {A : Type i} {B : Type i} {C : Type i} -> (g : B -> C) -> (f : A -> B) -> (A -> C)
 _∘_ g f x = g (f x)
+
+module _ {i} {A B : Type i} where
+
+  -- We take the canonical type for equivalences to be half adjoint equivalences
+  record is-equiv (f : A → B) : Type i
+    where
+    field
+      g : B → A
+      η : (g ∘ f) ~ id
+      ε : (f ∘ g) ~ id
+      τ : (a : A) → ap f (η a) == ε (f a)
+
+{- Equivalences without record types -}
+
 
 {- Quasi inverse -}
 q-inv : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> Type i
@@ -291,8 +294,8 @@ is-equiv' : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> Type i
 is-equiv' {_} {A} {B} f = (Σ (B -> A) λ g -> ((f ∘ g) ~ id)) × (Σ (B -> A) λ h -> ((h ∘ f) ~ id))
 
 {- Every map with a quasi inverse is an equivalence -}
-q-inv-to-equiv : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> (q-inv f) -> (is-equiv' f)
-q-inv-to-equiv f q = (( g , h1 ) , (g , h2)) where
+q-inv-to-equiv' : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> (q-inv f) -> (is-equiv' f)
+q-inv-to-equiv' f q = (( g , h1 ) , (g , h2)) where
   g = fst q
   h1 = fst (snd q)
   h2 = snd (snd q)
