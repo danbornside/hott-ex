@@ -261,7 +261,6 @@ data Bool : Type₀ where
 
 {- Equivalences -}
 
-
 _~_ : ∀ {i} {A : Type i} {B : Type i} -> (f : A -> B) -> (g : A -> B) -> Type i
 _~_ {_} {A} {_} f g = Π A λ x -> (f x) == (g x)
 

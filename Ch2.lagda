@@ -602,9 +602,9 @@ whisk-r {i} {_} {x} {y} {z} {_} {_} q = ind== D d where
   d : (p : x == y) -> D p p refl
   d _ = refl
 
-whisk-l : ∀ {i} {A : Type i} {x y z : A} {p : x == y} {q q' : y == z}
+whisk-l : ∀ {i} {A : Type i} {x y z : A} {q q' : y == z} -> (p : x == y)
   -> (q == q') -> ((p ■ q) == (p ■ q'))
-whisk-l {i} {_} {x} {y} {z} {p} {_} {_} = ind== D d where
+whisk-l {i} {_} {x} {y} {z} {_} {_} p = ind== D d where
   D : (q q' : y == z) -> (β : q == q') -> Type i
   D q q' β =  ((p ■ q) == (p ■ q'))
   d : (q : y == z) -> D q q refl
@@ -702,12 +702,50 @@ homotopy-square {i} {A} {B} f g H x y = ind== D d where
   d : (x : A) -> D x x refl
   d x = ■-id-r (H x)
 
+ap-id : ∀ {i} {A : Type i} {x y : A} -> (p : x == y) -> ap id p == p
+ap-id {i} {A} p = ind== D d p where
+  D : (x y : A) -> (x == y) -> Type i
+  D _ _ p = ap id p == p
+  d : (x : A) -> D x x refl
+  d _ = refl
+
+homotopy-equiv-square : ∀ {i} {A : Type i} -> (f : A -> A) -> (H : f ~ id)
+  -> (x : A) -> H (f x) == ap f (H x)
+homotopy-equiv-square f H x = (inverse (■-id-r (H (f x)))
+                              ■ (inverse (whisk-l (H (f x)) (■-inv-r (H x)))
+                              ■ (■-assoc (H (f x)) (H x) (inverse (H x))
+                              ■ whisk-r (inverse (H x))
+                                   (inverse (whisk-l (H (f x)) (ap-id (H x)))
+                              ■ homotopy-square f id H (f x) x (H x)))))
+                              ■ (inverse (■-assoc (ap f (H x)) (H x) (inverse (H x)))
+                              ■ (whisk-l (ap f (H x)) (■-inv-r (H x))
+                              ■ ■-id-r (ap f (H x))))
+
+∘-app : ∀ {i} {A B C : Type i} {x y : A} -> (p : x == y) -> (f : A -> B) -> (g : B -> C)
+  -> (ap g (ap f p)) == ap (g ∘ f) p
+∘-app {i} {A} {_} {_} {x} {y} p f g = ind== D d p where
+  D : (x y : A) -> (x == y) -> Type i
+  D x y p = (ap g (ap f p)) == ap (g ∘ f) p
+  d : (x : A) -> D x x refl
+  d x = refl
+
 q-inv-to-equiv : ∀ {i} {A B : Type i} -> (f : A -> B) -> (q-inv f) -> (is-equiv f)
-q-inv-to-equiv {i} {A} {B} f (g , (ε , η)) = record { g = g ; ε = ε' ; η = η ; τ = τ } where
+q-inv-to-equiv {i} {A} {B} f (g , (ε , η)) = record { g = g ; ε = ε' ; η = η ; τ = λ a -> (inverse (τ a)) } where
   ε' : (b : B) -> f (g b) == b
   ε' b = (inverse (ε (f (g b))) ) ■ (ap f (η (g b)) ■ ε b)
-  τ : (a : A) -> ap f (η a) == ε' (f a)
-  τ a = {! ?!}
+  derp : (a : A) -> ap f (η (g (f a))) == ap (f ∘ (g ∘ f)) (η a)
+  derp a = (ap (ap f) (homotopy-equiv-square {i} {A} (g ∘ f) η a)) ■ (∘-app (η a) (g ∘ f) (f))
+  blarg : (a : A) -> ap (f ∘ g) (ap f (η a)) ■ ε (f a) == ε (f (g (f a))) ■ ap f (η a)
+  blarg a = inverse
+              (homotopy-square (f ∘ g) id ε (f (g (f a))) (f a) (ap f (η a)))
+                ■ whisk-l (ε (f (g (f a)))) (ap-id (ap f (η a)))
+  herp : (a : A) ->  ap f (η (g (f a))) ■ (ε (f a))  == ε (f (g (f a))) ■ (ap f (η a))
+  herp a = whisk-r (ε (f a)) (derp a) ■ (whisk-r (ε (f a)) (inverse (∘-app (η a) f (f ∘ g))) ■ (blarg a))
+  τ : (a : A) -> ε' (f a) == ap f (η a)
+  τ a = whisk-l (inverse (ε (f (g (f a))))) (herp a)
+        ■ (■-assoc (inverse (ε (f (g (f a))))) (ε (f (g (f a)))) (ap f (η a))
+        ■ (whisk-r (ap f (η a)) (■-inv-l (ε (f (g (f a)))))
+        ■ ■-id-l (ap f (η a))))
 
 ∘-functor : ∀ {i} {A B C : Type i} -> (f : A -> B) -> (g : B -> C) -> (g' : B -> C)
   -> (g == g') -> (g ∘ f) == (g' ∘ f)
