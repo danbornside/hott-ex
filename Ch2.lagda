@@ -686,11 +686,13 @@ precomp : ∀ {i} {A B C : Type i} -> (A -> B) -> (B -> C) -> (A -> C)
 precomp f g = g ∘ f
 
 precomp-happly : ∀ {i} {A B X : Type i} -> (f : X -> A) -> (g g' : A -> B)
-    -> (α : (g == g'))
-      -> (x : X) -> (happly (g ∘ f) (g' ∘ f) (ap (precomp f) α) x) == (happly g g' α) (f x)
+  -> (α : (g == g'))
+    -> (x : X)
+      -> (happly (g ∘ f) (g' ∘ f) (ap (precomp f) α) x) == (happly g g' α) (f x)
 precomp-happly {i} {A} {B} {X} f g g' α = ind== D d α where
   D : (g g' : A -> B) -> (g == g') -> Type i
-  D g g' α = (x : X) -> (happly (g ∘ f) (g' ∘ f) (ap (precomp f) α) x) == (happly g g' α) (f x)
+  D g g' α = (x : X)
+    -> (happly (g ∘ f) (g' ∘ f) (ap (precomp f) α) x) == (happly g g' α) (f x)
   d : (g : A -> B) -> D g g refl
   d g x = refl
 
@@ -729,29 +731,34 @@ homotopy-equiv-square f H x = (inverse (■-id-r (H (f x)))
   d : (x : A) -> D x x refl
   d x = refl
 
-q-inv-to-equiv : ∀ {i} {A B : Type i} -> (f : A -> B) -> (q-inv f) -> (is-equiv f)
-q-inv-to-equiv {i} {A} {B} f (g , (ε , η)) = record { g = g ; ε = ε' ; η = η ; τ = λ a -> (inverse (τ a)) } where
+-- Theorem 2.4.3 from the book
+q-inv-to-equiv : ∀ {i} {A B : Type i} -> (f : A -> B)
+  -> (q-inv f) -> (is-equiv f)
+q-inv-to-equiv {i} {A} {B} f (g , (ε , η)) =
+  record { g = g ; ε = ε' ; η = η ; τ = λ a -> (inverse (τ a)) } where
   ε' : (b : B) -> f (g b) == b
   ε' b = (inverse (ε (f (g b))) ) ■ (ap f (η (g b)) ■ ε b)
-  derp : (a : A) -> ap f (η (g (f a))) == ap (f ∘ (g ∘ f)) (η a)
-  derp a = (ap (ap f) (homotopy-equiv-square {i} {A} (g ∘ f) η a)) ■ (∘-app (η a) (g ∘ f) (f))
-  blarg : (a : A) -> ap (f ∘ g) (ap f (η a)) ■ ε (f a) == ε (f (g (f a))) ■ ap f (η a)
-  blarg a = inverse
-              (homotopy-square (f ∘ g) id ε (f (g (f a))) (f a) (ap f (η a)))
-                ■ whisk-l (ε (f (g (f a)))) (ap-id (ap f (η a)))
-  herp : (a : A) ->  ap f (η (g (f a))) ■ (ε (f a))  == ε (f (g (f a))) ■ (ap f (η a))
-  herp a = whisk-r (ε (f a)) (derp a) ■ (whisk-r (ε (f a)) (inverse (∘-app (η a) f (f ∘ g))) ■ (blarg a))
+  η-ε-square : (a : A) ->
+    ap f (η (g (f a))) ■ (ε (f a))  == ε (f (g (f a))) ■ (ap f (η a))
+  η-ε-square a =
+    whisk-r (ε (f a)) ((ap (ap f) (homotopy-equiv-square {i} {A} (g ∘ f) η a))
+                       ■ (∘-app (η a) (g ∘ f) (f)) )
+    ■ (whisk-r (ε (f a)) (inverse (∘-app (η a) f (f ∘ g)))
+    ■ (inverse (homotopy-square (f ∘ g) id ε (f (g (f a))) (f a) (ap f (η a)))
+    ■ whisk-l (ε (f (g (f a)))) (ap-id (ap f (η a)))  ))
   τ : (a : A) -> ε' (f a) == ap f (η a)
-  τ a = whisk-l (inverse (ε (f (g (f a))))) (herp a)
+  τ a = whisk-l (inverse (ε (f (g (f a))))) (η-ε-square a)
         ■ (■-assoc (inverse (ε (f (g (f a))))) (ε (f (g (f a)))) (ap f (η a))
         ■ (whisk-r (ap f (η a)) (■-inv-l (ε (f (g (f a)))))
         ■ ■-id-l (ap f (η a))))
 
-∘-functor : ∀ {i} {A B C : Type i} -> (f : A -> B) -> (g : B -> C) -> (g' : B -> C)
-  -> (g == g') -> (g ∘ f) == (g' ∘ f)
+∘-functor : ∀ {i} {A B C : Type i}
+  -> (f : A -> B) -> (g : B -> C) -> (g' : B -> C)
+    -> (g == g') -> (g ∘ f) == (g' ∘ f)
 ∘-functor f g g' = ap (precomp f)
 
-happly-path : ∀ {i} {A B : Type i} -> (f g : A -> B) -> (α : f == g) -> (β : f == g)
+happly-path : ∀ {i} {A B : Type i}
+  -> (f g : A -> B) -> (α : f == g) -> (β : f == g)
     -> (happly f g α) == (happly f g β) -> α == β
 happly-path f g α β ψ = (inverse (h-inv-h f g α)) ■ (ψ' ■ h-inv-h f g β)  where
     ψ' : (funext f g (happly f g α)) == (funext f g (happly f g β))
@@ -767,8 +774,12 @@ p-map f g P X sq l = h ∘ l , (k ∘ l , ap (precomp l) α ) where
 
 open import Agda.Primitive using (lsuc)
 
-is-pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C) -> (P : Type i)
-  -> (com-sq f g P) -> Type (lsuc i)
+-- A square (P, _, _) over f,g is a pullback if for all types X,
+-- the induced function from maps from X to P to commutative squares
+-- over f,g is an equivalence.
+is-pullback : ∀ {i} {A B C : Type i}
+  -> (f : A -> C) -> (g : B -> C) -> (P : Type i)
+    -> (com-sq f g P) -> Type (lsuc i)
 is-pullback {i} f g P α = Π (Type i) λ X -> is-equiv (p-map f g P X α)
 
 -- pullback type of f, g
@@ -791,12 +802,14 @@ pullback-sq {_} {A} {B} f g = h , (k , (funext  (f ∘ h) (g ∘ k) α )) where
 -- We need to factor maps from X to f,g through P
 factor : ∀ {i} {A B C : Type i} {f : A -> C} {g : B -> C} {X : Type i}
   -> (com-sq f g X) -> (X -> (pullback f g))
-factor {_} {_} {_} {_} {f} {g} {_} (h' , (k' , α')) x = h' x , (k' x , (happly (f ∘ h') (g ∘ k') α') x)
-
+factor {_} {_} {_} {_} {f} {g} {_} (h' , (k' , α')) x =
+  h' x , (k' x , (happly (f ∘ h') (g ∘ k') α') x)
 
 pullback-is-pullback : ∀ {i} {A B C : Type i} -> (f : A -> C) -> (g : B -> C)
   -> (is-pullback f g (pullback f g) (pullback-sq f g))
-pullback-is-pullback {_} {A} {B} f g X = (q-inv-to-equiv (p-map f g P X P-sq) p-map-q-inv) where
+pullback-is-pullback {_} {A} {B} f g X =
+  (q-inv-to-equiv (p-map f g P X P-sq) p-map-q-inv) where
+
    P = pullback f g
    P-sq = pullback-sq f g
    h = fst P-sq
@@ -836,10 +849,6 @@ pullback-is-pullback {_} {A} {B} f g X = (q-inv-to-equiv (p-map f g P X P-sq) p-
        γ' x = snd (snd (l' x))
        γ : Π X λ x -> (f (h (l x))) == (g (k (l x)))
        γ x = snd (snd (l x))
-       -- We need that for all x, γ' x == γ'' x
-       -- This seems obvious by construction, but the construction
-       -- of l' involved a happly and funext, as well as
-       -- composing with l. So we need to unwrap all that.
        ψ : (x : X) -> (γ' x == (happly (f ∘ h) (g ∘ k) α) (l x))
        ψ = precomp-happly l (f ∘ h) (g ∘ k) α
 
@@ -854,5 +863,40 @@ pullback-is-pullback {_} {A} {B} f g X = (q-inv-to-equiv (p-map f g P X P-sq) p-
 \end{code}
 
 \section{}
+
+\section{}
+
+Show that $(2 \simeq 2) \simeq 2$.
+
+First, we must define equivalence of types.
+
+\begin{code}
+
+_≃_ : ∀ {i} -> (A B : Type i) -> Type i
+_≃_ A B = Σ (A -> B) λ f -> is-equiv(f)
+
+\end{code}
+
+The obvious thing to do here is to define a map ${\bf 2} \rightarrow {\bf 2}^{ \bf 2}$
+and show that it is an equivalence.
+
+Or, by univalence, we could find a path in the universe ${\bf 2} = {\bf 2}^{\bf 2}$.
+
+Well, I know how to construct a function, but I'm not sure how to construct
+a path in the universe (other than using the univalence axiom itself).
+
+
+\begin{code}
+
+\end{code}
+
+\section{}
+
+Suppose the equality reflection rule holds for a type $A$. Now
+show that $A$ is a set.
+
+\begin{code}
+
+\end{code}
 
 \end{document}
