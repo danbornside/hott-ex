@@ -877,6 +877,58 @@ _≃_ A B = Σ (A -> B) λ f -> is-equiv(f)
 
 \end{code}
 
+I guess we should define ${\bf 2}$ as well:
+
+\begin{code}
+
+data Two : Type₀ where
+  0₂ : Two
+  1₂ : Two
+
+rec₂ : ∀ {i} {C : Type i} -> C -> C -> Two -> C
+rec₂ c₀ c₁ 0₂ = c₀
+rec₂ c₀ c₁ 1₂ = c₁
+
+ind₂ : ∀ {j} -> (C : Two -> Type j) -> C 0₂ -> C 1₂ -> Π Two C
+ind₂ C c₀ c₁ 0₂ = c₀
+ind₂ C c₀ c₁ 1₂ = c₁
+
+\end{code}
+
+While we're at it, I suppose we should prove that anything in {\bf 2} is
+equal to $0₂$ or $1₂$:
+
+\begin{code}
+elems-of-two : (x : Two) -> Coprod (x == 0₂) (x == 1₂)
+elems-of-two x = ind₂ D (inl refl) (inr refl) x where
+  D : Two -> Type _
+  D x = Coprod (x == 0₂) (x == 1₂)
+
+--encode-decode for Two
+code₂ : Two -> Two -> Type₀
+code₂ 0₂ 0₂ = Unit
+code₂ 1₂ 1₂ = Unit
+code₂ 0₂ 1₂ = Empty
+code₂ 1₂ 0₂ = Empty
+
+r₂ : (x : Two) -> code₂ x x
+r₂ 0₂ = unit
+r₂ 1₂ = unit
+
+encode₂ : {x y : Two} → (x == y) -> code₂ x y
+encode₂ {x} {y} p = transport (code₂ x) p (r₂ x)
+
+decode₂ : {x y : Two} → code₂ x y -> x == y
+decode₂ {0₂} {0₂} =  λ _ → refl
+decode₂ {0₂} {1₂} =  λ ()
+decode₂ {1₂} {0₂} =  λ ()
+decode₂ {1₂} {1₂} =  λ _ → refl
+
+Two-ness : 0₂ == 1₂ → Empty
+Two-ness p = encode₂ p
+
+\end{code}
+
 The obvious thing to do here is to define a map ${\bf 2} \rightarrow {\bf 2}^{ \bf 2}$
 and show that it is an equivalence.
 
@@ -885,8 +937,103 @@ Or, by univalence, we could find a path in the universe ${\bf 2} = {\bf 2}^{\bf 
 Well, I know how to construct a function, but I'm not sure how to construct
 a path in the universe (other than using the univalence axiom itself).
 
+Perhaps we can start by showing that an automorphism on ${\bf 2}$ is determined
+by where it sends $0_2$.
 
 \begin{code}
+
+Two-equivs : {f : Two ≃ Two} -> ((fst f) 0₂) == ((fst f) 1₂) -> Empty
+Two-equivs {f , (equiv g η ε τ)} p = Two-ness (inverse (η 0₂) ■ (ap g p ■ η 1₂))
+
+Two-auto : Two -> (Two ≃ Two)
+Two-auto 0₂ = f , q-inv-to-equiv f f-q-inv where
+  f : Two -> Two
+  f = rec₂ 0₂ 1₂
+  f-homotopy : (f ∘ f) ~ id
+  f-homotopy x =  is-one-or-other p where
+    p : Coprod (x == 0₂) (x == 1₂)
+    p = (elems-of-two x)
+
+    is-one-or-other : Coprod (x == 0₂) (x == 1₂) → (f (f x)) == x
+    is-one-or-other (inl p0) = (ap (f ∘ f) p0) ■ inverse p0
+    is-one-or-other (inr p1) = ap (f ∘ f) p1 ■ inverse p1
+
+  f-q-inv : q-inv f
+  f-q-inv = f , (f-homotopy , f-homotopy)
+
+Two-auto 1₂ = f , q-inv-to-equiv f f-q-inv where
+  f : Two -> Two
+  f = rec₂ 1₂ 0₂
+  f-homotopy : (f ∘ f) ~ id
+  f-homotopy x =  is-one-or-other p where
+    p : Coprod (x == 0₂) (x == 1₂)
+    p = (elems-of-two x)
+
+    is-one-or-other : Coprod (x == 0₂) (x == 1₂) → (f (f x)) == x
+    is-one-or-other (inl p0) = (ap (f ∘ f) p0) ■ inverse p0
+    is-one-or-other (inr p1) = ap (f ∘ f) p1 ■ inverse p1
+
+  f-q-inv : q-inv f
+  f-q-inv = f , (f-homotopy , f-homotopy)
+
+Two-auto-inv : (Two ≃ Two) -> Two
+Two-auto-inv (f , _) = f 0₂
+
+Two-auto-paths : (f : Two ≃ Two) → (fst f) 0₂ == 0₂ → (fst f) 1₂ == 1₂
+Two-auto-paths (f , _) p = derp image-1₂ where
+  image-1₂ = elems-of-two (f 1₂)
+  derp : Coprod ((f 1₂) == 0₂) ((f 1₂) == 1₂) → f 1₂ == 1₂
+  derp (inl p0) = Empty-elim (Two-equivs (p ■ inverse p0))
+  derp (inr p1) = p1
+
+Two-auto-path-0₂ : (x : Two) → (x == 0₂) → (fst (Two-auto x)) 0₂ == 0₂
+Two-auto-path-0₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 0₂))
+                      (fst (Σ== (ap Two-auto p))) 0₂
+
+Two-auto-path-1₂ : (x : Two) → (x == 1₂) → (fst (Two-auto x)) 0₂ == 1₂
+Two-auto-path-1₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 1₂))
+                      (fst (Σ== (ap Two-auto p))) 0₂
+
+Two-auto-path-0₂-1₂ : (x : Two) → (x == 0₂) → (fst (Two-auto x)) 1₂ == 1₂
+Two-auto-path-0₂-1₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 0₂))
+                      (fst (Σ== (ap Two-auto p))) 1₂
+
+Two-auto-path-1₂-1₂ : (x : Two) → (x == 1₂) → (fst (Two-auto x)) 1₂ == 0₂
+Two-auto-path-1₂-1₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 1₂))
+                      (fst (Σ== (ap Two-auto p))) 1₂
+
+Two-η : (x : Two) -> (Two-auto-inv (Two-auto x)) == x
+Two-η = ind₂ D refl refl where
+  D : (x : Two) -> Type₀
+  D x = (Two-auto-inv (Two-auto x)) == x
+
+Two-ε : (f : (Two ≃ Two)) -> (Two-auto (Two-auto-inv f)) == f
+Two-ε (f , ψ) = Σ==-inv (funext (fst (Two-auto (Two-auto-inv (f , ψ)))) f H , {!!}) where
+  H : (x : Two) -> (fst (Two-auto (Two-auto-inv (f , ψ))) x) == (f x)
+  H 0₂ = pick-one image-0₂ where
+    image-0₂ = elems-of-two (f 0₂)
+    pick-one : Coprod ((f 0₂) == 0₂) ((f 0₂) == 1₂)
+      → fst (Two-auto (Two-auto-inv (f , ψ))) 0₂ == f 0₂
+    pick-one (inl p0) = Two-auto-path-0₂ (f 0₂) p0 ■ inverse p0
+    pick-one (inr p1) = Two-auto-path-1₂ (f 0₂) p1 ■ inverse p1
+  H 1₂ = pick-one image-1₂ where
+    image-0₂ = elems-of-two (f 0₂)
+    image-1₂ = elems-of-two (f 1₂)
+    pick-one : Coprod ((f 1₂) == 0₂) ((f 1₂) == 1₂)
+      → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂
+    pick-one (inl p0) = pick-another image-0₂ where
+        pick-another : Coprod ((f 0₂) == 0₂) ((f 0₂) == 1₂)
+          → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂
+        pick-another (inl q0) = Empty-elim (Two-equivs (q0 ■ inverse p0))
+        pick-another (inr q1) = Two-auto-path-1₂-1₂ (f 0₂) q1 ■ inverse p0
+    pick-one (inr p1) = pick-another image-0₂ where
+        pick-another : Coprod ((f 0₂) == 0₂) ((f 0₂) == 1₂)
+          → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂
+        pick-another (inl q0) = Two-auto-path-0₂-1₂ (f 0₂) q0 ■ inverse p1
+        pick-another (inr q1) = Empty-elim (Two-equivs (q1 ■ inverse p1))
+
+Two-auto-is-equiv : is-equiv Two-auto
+Two-auto-is-equiv = q-inv-to-equiv Two-auto (Two-auto-inv ,  (Two-ε , Two-η))
 
 \end{code}
 

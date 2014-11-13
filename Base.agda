@@ -273,8 +273,8 @@ _∘_ g f x = g (f x)
 module _ {i} {A B : Type i} where
 
   -- We take the canonical type for equivalences to be half adjoint equivalences
-  record is-equiv (f : A → B) : Type i
-    where
+  record is-equiv (f : A → B) : Type i where
+    constructor equiv
     field
       g : B → A
       η : (g ∘ f) ~ id
