@@ -903,7 +903,17 @@ elems-of-two : (x : Two) -> Coprod (x == 0₂) (x == 1₂)
 elems-of-two x = ind₂ D (inl refl) (inr refl) x where
   D : Two -> Type _
   D x = Coprod (x == 0₂) (x == 1₂)
+\end{code}
 
+Also, we would like to know that $0 \not = 1$. With the above theorem,
+this would imply that {\bf 2} has two distinct path components.
+
+To do this, we will show that if $0 = 1$ then the empty type is
+inhabited. We will need the encode-decode method for ${\bf 2}$.
+(Actually, only encode is necessary, but I'll do both for the
+same of completeness.)
+
+\begin{code}
 --encode-decode for Two
 code₂ : Two -> Two -> Type₀
 code₂ 0₂ 0₂ = Unit
@@ -924,12 +934,14 @@ decode₂ {0₂} {1₂} =  λ ()
 decode₂ {1₂} {0₂} =  λ ()
 decode₂ {1₂} {1₂} =  λ _ → refl
 
-Two-ness : 0₂ == 1₂ → Empty
-Two-ness p = encode₂ p
+Two-distinct : 0₂ == 1₂ → Empty
+Two-distinct p = encode₂ p
 
 \end{code}
 
-The obvious thing to do here is to define a map ${\bf 2} \rightarrow {\bf 2}^{ \bf 2}$
+Now, let's start picking apart automorphisms of ${\bf 2}$.
+
+We must define a map ${\bf 2} \rightarrow {\bf 2}^{ \bf 2}$
 and show that it is an equivalence.
 
 Or, by univalence, we could find a path in the universe ${\bf 2} = {\bf 2}^{\bf 2}$.
@@ -937,27 +949,36 @@ Or, by univalence, we could find a path in the universe ${\bf 2} = {\bf 2}^{\bf 
 Well, I know how to construct a function, but I'm not sure how to construct
 a path in the universe (other than using the univalence axiom itself).
 
-Perhaps we can start by showing that an automorphism on ${\bf 2}$ is determined
-by where it sends $0_2$.
+First, we'll show that automorphisms cannot send $0$ and $1$ to equal
+inhabitants. This is accomplished by using the structure of the
+equivalence to show that such a path would imply $0 = 1$.
 
 \begin{code}
 
-Two-equivs : {f : Two ≃ Two} -> ((fst f) 0₂) == ((fst f) 1₂) -> Empty
-Two-equivs {f , (equiv g η ε τ)} p = Two-ness (inverse (η 0₂) ■ (ap g p ■ η 1₂))
+Two-auto-distinct : {f : Two ≃ Two}
+  -> ((fst f) 0₂) == ((fst f) 1₂) -> Empty
+Two-auto-distinct {f , (equiv g η ε τ)} p =
+  Two-distinct (inverse (η 0₂) ■ (ap g p ■ η 1₂))
+
+\end{code}
+
+Now we will define automorphisms of ${\bf 2}$ corresponding to
+$0$ and $1$. As you might imagine, $0$ will correspond to the identity
+and $1$ will correspond to the twist map.
+
+\begin{code}
 
 Two-auto : Two -> (Two ≃ Two)
 Two-auto 0₂ = f , q-inv-to-equiv f f-q-inv where
   f : Two -> Two
   f = rec₂ 0₂ 1₂
   f-homotopy : (f ∘ f) ~ id
-  f-homotopy x =  is-one-or-other p where
+  f-homotopy x = is-one-or-other p where
     p : Coprod (x == 0₂) (x == 1₂)
     p = (elems-of-two x)
-
     is-one-or-other : Coprod (x == 0₂) (x == 1₂) → (f (f x)) == x
     is-one-or-other (inl p0) = (ap (f ∘ f) p0) ■ inverse p0
     is-one-or-other (inr p1) = ap (f ∘ f) p1 ■ inverse p1
-
   f-q-inv : q-inv f
   f-q-inv = f , (f-homotopy , f-homotopy)
 
@@ -968,22 +989,52 @@ Two-auto 1₂ = f , q-inv-to-equiv f f-q-inv where
   f-homotopy x =  is-one-or-other p where
     p : Coprod (x == 0₂) (x == 1₂)
     p = (elems-of-two x)
-
     is-one-or-other : Coprod (x == 0₂) (x == 1₂) → (f (f x)) == x
     is-one-or-other (inl p0) = (ap (f ∘ f) p0) ■ inverse p0
     is-one-or-other (inr p1) = ap (f ∘ f) p1 ■ inverse p1
-
   f-q-inv : q-inv f
   f-q-inv = f , (f-homotopy , f-homotopy)
 
+\end{code}
+
+We would like to construct a quasi inverse to this map to show
+that it is an equivalence. The inverse will take an automorphism
+to its evaluation on $0$.
+
+\begin{code}
 Two-auto-inv : (Two ≃ Two) -> Two
 Two-auto-inv (f , _) = f 0₂
+\end{code}
+
+Now comes the more difficult part. We need two homotopies to demonstrate
+that this is indeed a quasi-inverse.
+
+One is quite easily obtained by induction over ${\bf 2}$.
+
+\begin{code}
+
+Two-η : (x : Two) -> (Two-auto-inv (Two-auto x)) == x
+Two-η = ind₂ D refl refl where
+  D : (x : Two) -> Type₀
+  D x = (Two-auto-inv (Two-auto x)) == x
+
+\end{code}
+
+The other direction is harder for a few reasons. We essentially need
+to do case analysis on $(f 0)$ where $f$ is an automorphism. To this,
+need to prove some lemmas of the form ``if $x$ is equal to $0$, then
+the above functions applied to $x$ behave as if they were applied
+to $0$''.
+
+\begin{code}
+
+open import Agda.Primitive using (lzero)
 
 Two-auto-paths : (f : Two ≃ Two) → (fst f) 0₂ == 0₂ → (fst f) 1₂ == 1₂
-Two-auto-paths (f , _) p = derp image-1₂ where
+Two-auto-paths (f , ψ) p = derp image-1₂ where
   image-1₂ = elems-of-two (f 1₂)
   derp : Coprod ((f 1₂) == 0₂) ((f 1₂) == 1₂) → f 1₂ == 1₂
-  derp (inl p0) = Empty-elim (Two-equivs (p ■ inverse p0))
+  derp (inl p0) = Empty-elim {lzero} {λ x → f 1₂ == 1₂} (Two-auto-distinct {(f , ψ)} (p ■ inverse p0))
   derp (inr p1) = p1
 
 Two-auto-path-0₂ : (x : Two) → (x == 0₂) → (fst (Two-auto x)) 0₂ == 0₂
@@ -1002,10 +1053,11 @@ Two-auto-path-1₂-1₂ : (x : Two) → (x == 1₂) → (fst (Two-auto x)) 1₂ 
 Two-auto-path-1₂-1₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 1₂))
                       (fst (Σ== (ap Two-auto p))) 1₂
 
-Two-η : (x : Two) -> (Two-auto-inv (Two-auto x)) == x
-Two-η = ind₂ D refl refl where
-  D : (x : Two) -> Type₀
-  D x = (Two-auto-inv (Two-auto x)) == x
+\end{code}
+
+Finally, we construct the homotopies of the quasi equivalence:
+
+\begin{code}
 
 Two-ε : (f : (Two ≃ Two)) -> (Two-auto (Two-auto-inv f)) == f
 Two-ε (f , ψ) = Σ==-inv (funext (fst (Two-auto (Two-auto-inv (f , ψ)))) f H , {!!}) where
@@ -1024,13 +1076,23 @@ Two-ε (f , ψ) = Σ==-inv (funext (fst (Two-auto (Two-auto-inv (f , ψ)))) f H 
     pick-one (inl p0) = pick-another image-0₂ where
         pick-another : Coprod ((f 0₂) == 0₂) ((f 0₂) == 1₂)
           → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂
-        pick-another (inl q0) = Empty-elim (Two-equivs (q0 ■ inverse p0))
+        pick-another (inl q0) = Empty-elim {lzero}
+          {λ x → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂}
+          (Two-auto-distinct {f , ψ }(q0 ■ inverse p0))
         pick-another (inr q1) = Two-auto-path-1₂-1₂ (f 0₂) q1 ■ inverse p0
     pick-one (inr p1) = pick-another image-0₂ where
         pick-another : Coprod ((f 0₂) == 0₂) ((f 0₂) == 1₂)
           → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂
         pick-another (inl q0) = Two-auto-path-0₂-1₂ (f 0₂) q0 ■ inverse p1
-        pick-another (inr q1) = Empty-elim (Two-equivs (q1 ■ inverse p1))
+        pick-another (inr q1) = Empty-elim {lzero}
+          {λ x → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂}
+          (Two-auto-distinct {f , ψ} (q1 ■ inverse p1))
+
+  τ :  transport is-equiv
+                 (funext (fst (Two-auto (Two-auto-inv (f , ψ)))) f H)
+                 (snd (Two-auto (f 0₂)))
+       == ψ
+  τ = {!!}
 
 Two-auto-is-equiv : is-equiv Two-auto
 Two-auto-is-equiv = q-inv-to-equiv Two-auto (Two-auto-inv ,  (Two-ε , Two-η))
