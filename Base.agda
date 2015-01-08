@@ -13,6 +13,7 @@ Type0 = Type lzero
 Type₁ = Type (lsuc lzero)
 Type1 = Type (lsuc lzero)
 
+
 {- Naturals -}
 
 data ℕ : Type₀ where
@@ -280,6 +281,12 @@ module _ {i} {A B : Type i} where
       η : (g ∘ f) ~ id
       ε : (f ∘ g) ~ id
       τ : (a : A) → ap f (η a) == ε (f a)
+
+  postulate
+    -- TODO(dustin): prove this as a theorem
+    is-equiv-equal : {f : (A → B)}
+      → (ψ : (is-equiv f)) → (ψ' : (is-equiv f))
+        → ψ == ψ'
 
 {- Equivalences without record types -}
 

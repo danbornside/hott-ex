@@ -901,7 +901,7 @@ equal to $0₂$ or $1₂$:
 \begin{code}
 elems-of-two : (x : Two) -> Coprod (x == 0₂) (x == 1₂)
 elems-of-two x = ind₂ D (inl refl) (inr refl) x where
-  D : Two -> Type _
+  D : Two -> Type₀
   D x = Coprod (x == 0₂) (x == 1₂)
 \end{code}
 
@@ -926,7 +926,7 @@ r₂ 0₂ = unit
 r₂ 1₂ = unit
 
 encode₂ : {x y : Two} → (x == y) -> code₂ x y
-encode₂ {x} {y} p = transport (code₂ x) p (r₂ x)
+encode₂ {x} {y} p = (transport (code₂ x) p) (r₂ x)
 
 decode₂ : {x y : Two} → code₂ x y -> x == y
 decode₂ {0₂} {0₂} =  λ _ → refl
@@ -1030,19 +1030,15 @@ to $0$''.
 
 open import Agda.Primitive using (lzero)
 
-Two-auto-paths : (f : Two ≃ Two) → (fst f) 0₂ == 0₂ → (fst f) 1₂ == 1₂
-Two-auto-paths (f , ψ) p = derp image-1₂ where
-  image-1₂ = elems-of-two (f 1₂)
-  derp : Coprod ((f 1₂) == 0₂) ((f 1₂) == 1₂) → f 1₂ == 1₂
-  derp (inl p0) = Empty-elim {lzero} {λ x → f 1₂ == 1₂} (Two-auto-distinct {(f , ψ)} (p ■ inverse p0))
-  derp (inr p1) = p1
-
-Two-auto-path-0₂ : (x : Two) → (x == 0₂) → (fst (Two-auto x)) 0₂ == 0₂
-Two-auto-path-0₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 0₂))
+-- These are utitily functions that give paths out of the image of Two-auto
+-- ``repeatedly applied'' to ihabitants of Two. They could be inlined into
+-- the proof below, but this seems nicer.
+Two-auto-path-0₂-0₂ : (x : Two) → (x == 0₂) → (fst (Two-auto x)) 0₂ == 0₂
+Two-auto-path-0₂-0₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 0₂))
                       (fst (Σ== (ap Two-auto p))) 0₂
 
-Two-auto-path-1₂ : (x : Two) → (x == 1₂) → (fst (Two-auto x)) 0₂ == 1₂
-Two-auto-path-1₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 1₂))
+Two-auto-path-1₂-0₂ : (x : Two) → (x == 1₂) → (fst (Two-auto x)) 0₂ == 1₂
+Two-auto-path-1₂-0₂ x p = happly (fst (Two-auto x)) (fst (Two-auto 1₂))
                       (fst (Σ== (ap Two-auto p))) 0₂
 
 Two-auto-path-0₂-1₂ : (x : Two) → (x == 0₂) → (fst (Two-auto x)) 1₂ == 1₂
@@ -1060,39 +1056,66 @@ Finally, we construct the homotopies of the quasi equivalence:
 \begin{code}
 
 Two-ε : (f : (Two ≃ Two)) -> (Two-auto (Two-auto-inv f)) == f
-Two-ε (f , ψ) = Σ==-inv (funext (fst (Two-auto (Two-auto-inv (f , ψ)))) f H , {!!}) where
+Two-ε (f , ψ) = Σ==-inv (funext (fst (Two-auto (Two-auto-inv (f , ψ)))) f H , τ) where
   H : (x : Two) -> (fst (Two-auto (Two-auto-inv (f , ψ))) x) == (f x)
+
+  -- we define a homotopy over Two
   H 0₂ = pick-one image-0₂ where
+
+    -- either (f 0₂) == 0₂ or (f 0₂) == 1₂
     image-0₂ = elems-of-two (f 0₂)
+
+    -- in either case, running f through the quasi inverse and back again
+    -- gives a function that sends 0₂ to something equal to (f 0₂)
     pick-one : Coprod ((f 0₂) == 0₂) ((f 0₂) == 1₂)
       → fst (Two-auto (Two-auto-inv (f , ψ))) 0₂ == f 0₂
-    pick-one (inl p0) = Two-auto-path-0₂ (f 0₂) p0 ■ inverse p0
-    pick-one (inr p1) = Two-auto-path-1₂ (f 0₂) p1 ■ inverse p1
+    pick-one (inl p0) = Two-auto-path-0₂-0₂ (f 0₂) p0 ■ inverse p0
+    pick-one (inr p1) = Two-auto-path-1₂-0₂ (f 0₂) p1 ■ inverse p1
+
   H 1₂ = pick-one image-1₂ where
+
+    -- Here, we need to know the image of both 0₂ and 1₂ under f
+    -- why? Because Two-auto-inv is defined as (f 0₂)
     image-0₂ = elems-of-two (f 0₂)
     image-1₂ = elems-of-two (f 1₂)
     pick-one : Coprod ((f 1₂) == 0₂) ((f 1₂) == 1₂)
       → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂
     pick-one (inl p0) = pick-another image-0₂ where
+
         pick-another : Coprod ((f 0₂) == 0₂) ((f 0₂) == 1₂)
           → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂
+
+        -- (f 1₂) == 0₂ and (f 0₂) == 0₂, a contradiction
         pick-another (inl q0) = Empty-elim {lzero}
           {λ x → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂}
           (Two-auto-distinct {f , ψ }(q0 ■ inverse p0))
+
+        -- (f 1₂) == 0₂ and (f 1₂) == 1₂, the ``identity'' function,
+        -- so both sides are equal to 1₂
         pick-another (inr q1) = Two-auto-path-1₂-1₂ (f 0₂) q1 ■ inverse p0
     pick-one (inr p1) = pick-another image-0₂ where
         pick-another : Coprod ((f 0₂) == 0₂) ((f 0₂) == 1₂)
           → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂
+
+        -- (f 1₂) == 1₂ and (f 0₂) == 0₂, the twist function,
+        -- so both sides are equal to 0₂
         pick-another (inl q0) = Two-auto-path-0₂-1₂ (f 0₂) q0 ■ inverse p1
+
+        -- (f 1₂) == 1₂ and (f 0₂) == 1₂, a contradiction
         pick-another (inr q1) = Empty-elim {lzero}
           {λ x → fst (Two-auto (Two-auto-inv (f , ψ))) 1₂ == f 1₂}
           (Two-auto-distinct {f , ψ} (q1 ■ inverse p1))
 
   τ :  transport is-equiv
                  (funext (fst (Two-auto (Two-auto-inv (f , ψ)))) f H)
-                 (snd (Two-auto (f 0₂)))
+                   (snd (Two-auto (f 0₂)))
        == ψ
-  τ = {!!}
+  -- Thankfully, all equivalences are equal!
+  τ = is-equiv-equal
+        (transport is-equiv
+         (funext (fst (Two-auto (Two-auto-inv (f , ψ)))) f H)
+         (snd (Two-auto (f 0₂))))
+        ψ
 
 Two-auto-is-equiv : is-equiv Two-auto
 Two-auto-is-equiv = q-inv-to-equiv Two-auto (Two-auto-inv ,  (Two-ε , Two-η))
